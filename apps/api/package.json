@@ -1,0 +1,33 @@
+{
+  "name": "@gcarbon/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gcarbon/config": "*",
+    "@gcarbon/types": "*",
+    "compromise": "^14.17.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^8.0.0",
+    "mammoth": "^1.12.3",
+    "mongodb": "^6.0.0",
+    "multer": "^2.3.0",
+    "pdf-parse": "1.1.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.0.0",
+    "@types/pdf-parse": "^1.1.5",
+    "tsx": "^4.16.2"
+  }
+}

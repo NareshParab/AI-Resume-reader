@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: 15 23 42;        /* slate-900 */
+    --color-surface: 30 41 59;   /* slate-800 */
+    --color-border: 51 65 85;    /* slate-700 */
+    --color-text: 248 250 252;   /* slate-50 */
+    --color-muted: 148 163 184;  /* slate-400 */
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: rgb(var(--color-bg));
+    color: rgb(var(--color-text));
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .text-muted {
+    color: rgb(var(--color-muted));
+  }
+  .bg-surface {
+    background-color: rgb(var(--color-surface));
+  }
+  .border-default {
+    border-color: rgb(var(--color-border));
+  }
+}
