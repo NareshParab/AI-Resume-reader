@@ -11,6 +11,21 @@ import { resumesRouter } from "./routes/resumes.js";
 import { API_PORT, API_BASE_PATH, CORS_ALLOWED_ORIGINS } from "@gcarbon/config";
 import { closeDatabase } from "./lib/db.js";
 
+// ─── Process-level safety net ──────────────────────────────────────────────────
+// Some third-party parsing libraries (e.g. pdf-parse, wrapping an older pdf.js
+// build) can throw exceptions asynchronously, outside any promise chain a
+// route-level try/catch can see. Without these handlers, such an exception
+// would crash the entire Node process — taking the API down for every
+// concurrent user, not just the one request that triggered it. These handlers
+// log the failure and keep the process alive instead.
+process.on("uncaughtException", (err) => {
+  console.error("[API] Uncaught exception (process kept alive):", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[API] Unhandled promise rejection (process kept alive):", reason);
+});
+
 const app = express();
 
 // ─── Security middleware ───────────────────────────────────────────────────────

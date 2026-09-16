@@ -20,3 +20,22 @@ export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
     error: z.string().optional(),
     message: z.string().optional(),
   });
+
+// ─── Resume routes ────────────────────────────────────────────────────────────
+
+export const resumeIdParamSchema = z.object({
+  id: z
+    .string()
+    .regex(/^[a-fA-F0-9]{24}$/, "Resume ID must be a 24-character hexadecimal string."),
+});
+
+export const resumeFileMetadataSchema = z.object({
+  originalname: z
+    .string()
+    .min(1, "Filename cannot be empty.")
+    .max(255, "Filename is too long."),
+  mimetype: z.enum([
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ]),
+});

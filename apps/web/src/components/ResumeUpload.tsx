@@ -6,7 +6,6 @@ import type {
   WorkExperienceEntry,
   EducationEntry,
   ProjectEntry,
-  SkillCategories,
 } from "@gcarbon/types";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -74,7 +73,7 @@ function ExperienceCard({ entry, index }: { entry: WorkExperienceEntry; index: n
           <span className="text-sm text-brand-400 font-medium">— {entry.company}</span>
         )}
       </div>
-      {(entry.startDate || entry.endDate || entry.duration) && (
+      {(entry.startDate ?? entry.endDate ?? entry.duration) && (
         <p className="text-xs text-slate-400 mb-2">
           {[entry.startDate, entry.endDate].filter(Boolean).join(" – ")}
           {entry.duration ? ` · ${entry.duration}` : ""}
@@ -131,7 +130,7 @@ function EducationCard({ entry }: { entry: EducationEntry }) {
       {entry.institution && (
         <p className="text-xs text-slate-400 mt-0.5">{entry.institution}</p>
       )}
-      {(entry.startYear || entry.endYear) && (
+      {(entry.startYear ?? entry.endYear) && (
         <p className="text-xs text-slate-500 mt-1">
           {[entry.startYear, entry.endYear].filter(Boolean).join(" – ")}
           {entry.expected ? " (Expected)" : ""}
@@ -144,10 +143,7 @@ function EducationCard({ entry }: { entry: EducationEntry }) {
 // ─── Parsed profile panel ─────────────────────────────────────────────────────
 
 function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
-  const sc = (p.skillCategories as SkillCategories) ?? {
-    programming: [], databases: [], pythonLibraries: [],
-    biVisualization: [], analytics: [], tools: [], aiAssisted: [], other: [],
-  };
+  const sc = p.skillCategories;
 
   return (
     <div className="mt-8 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
@@ -293,7 +289,7 @@ export function ResumeUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setFile(e.target.files[0]);
       setError(null);
       setResult(null);
@@ -316,7 +312,7 @@ export function ResumeUpload() {
       if (response.ok && json.success && json.data) {
         setResult(json.data);
       } else {
-        setError(json.error || "Failed to upload resume.");
+        setError(json.error ?? "Failed to upload resume.");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
@@ -326,7 +322,7 @@ export function ResumeUpload() {
   };
 
   const handleParse = async () => {
-    if (!result || !result._id) return;
+    if (!result?._id) return;
     setIsParsing(true);
     setError(null);
     try {
@@ -338,7 +334,7 @@ export function ResumeUpload() {
       if (response.ok && json.success && json.data) {
         setResult(json.data);
       } else {
-        setError(json.error || "Failed to parse resume.");
+        setError(json.error ?? "Failed to parse resume.");
       }
     } catch (err) {
       setError(
@@ -387,7 +383,7 @@ export function ResumeUpload() {
                 <span className="text-sm font-medium text-slate-200 truncate">{file.name}</span>
               </div>
               <button
-                onClick={handleUpload}
+                onClick={() => { void handleUpload(); }}
                 disabled={isUploading}
                 className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -428,7 +424,7 @@ export function ResumeUpload() {
               {!result.parsedProfile ? (
                 <div className="flex justify-center pt-2">
                   <button
-                    onClick={handleParse}
+                    onClick={() => { void handleParse(); }}
                     disabled={isParsing}
                     className="px-8 py-3 bg-brand-500 hover:bg-brand-400 text-white font-semibold rounded-xl disabled:opacity-50 transition-all shadow-lg shadow-brand-500/20 flex items-center gap-2"
                   >

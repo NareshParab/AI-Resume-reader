@@ -49,7 +49,7 @@ function StatusBadge({ status }: { status: HealthStatus["status"] }) {
     down: { label: "Down", color: "bg-red-500", dot: "" },
   } as const;
 
-  const { label, color, dot } = map[status as keyof typeof map];
+  const { label, color, dot } = map[status];
 
   return (
     <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-sm font-medium">

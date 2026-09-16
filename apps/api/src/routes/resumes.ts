@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -9,6 +9,7 @@ import { getDatabase } from "../lib/db.js";
 import type { Resume } from "@gcarbon/types";
 import { ObjectId } from "mongodb";
 import { parseResumeText } from "../lib/parser.js";
+import { resumeIdParamSchema, resumeFileMetadataSchema } from "@gcarbon/schemas";
 
 export const resumesRouter = Router();
 
@@ -29,24 +30,75 @@ const upload = multer({
   },
 });
 
-resumesRouter.post("/upload", upload.single("resume"), async (req, res) => {
+function handleUpload(req: Request, res: Response, next: NextFunction) {
+  upload.single("resume")(req, res, (err: unknown) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({
+            success: false,
+            error: "File is too large. Maximum size is 5MB.",
+          });
+        }
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      if (err instanceof Error) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      return res.status(400).json({
+        success: false,
+        error: "Failed to process the uploaded file.",
+      });
+    }
+    next();
+  });
+}
+
+const EXTRACTION_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err: unknown) => {
+        clearTimeout(timer);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      });
+  });
+}
+
+resumesRouter.post("/upload", handleUpload, async (req, res) => {
   try {
     const file = req.file;
     if (!file) {
       return res.status(400).json({ success: false, error: "No file uploaded." });
     }
 
+    const fileMetaResult = resumeFileMetadataSchema.safeParse(file);
+    if (!fileMetaResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: fileMetaResult.error.issues[0]?.message ?? "Invalid file metadata.",
+      });
+    }
+
     let extractedText = "";
 
     // Extract text based on file type
     if (file.mimetype === "application/pdf") {
-      const pdfData = await pdfParse(file.buffer);
+      const pdfData = await withTimeout<any>(pdfParse(file.buffer), EXTRACTION_TIMEOUT_MS, "PDF parsing");
       extractedText = pdfData.text;
     } else if (
       file.mimetype ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
-      const result = await mammoth.extractRawText({ buffer: file.buffer });
+      const result = await withTimeout<any>(mammoth.extractRawText({ buffer: file.buffer }), EXTRACTION_TIMEOUT_MS, "DOCX parsing");
       extractedText = result.value;
     }
 
@@ -89,6 +141,15 @@ resumesRouter.post("/upload", upload.single("resume"), async (req, res) => {
 resumesRouter.post("/:id/parse", async (req, res) => {
   try {
     const { id } = req.params;
+
+    const idResult = resumeIdParamSchema.safeParse({ id });
+    if (!idResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: idResult.error.issues[0]?.message ?? "Invalid resume ID format.",
+      });
+    }
+
     const db = getDatabase();
     // Use 'any' type for the collection so we don't trip over strict typing with _id vs string
     const resumesCollection = db.collection("resumes");
