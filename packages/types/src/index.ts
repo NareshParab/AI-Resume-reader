@@ -95,6 +95,14 @@ export interface ParsedProfile {
   languages: string[];
 }
 
+export interface AiInsights {
+  summary: string;
+  strengths: string[];
+  improvementSuggestions: string[];
+  generatedAt: string;
+  model: string;
+}
+
 export interface Resume {
   _id?: string;
   filename: string;
@@ -104,4 +112,5 @@ export interface Resume {
   wordCount: number;
   uploadedAt: string;
   parsedProfile?: ParsedProfile;
+  aiInsights?: AiInsights;
 }

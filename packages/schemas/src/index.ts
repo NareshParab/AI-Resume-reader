@@ -39,3 +39,11 @@ export const resumeFileMetadataSchema = z.object({
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ]),
 });
+
+// ─── AI analysis ──────────────────────────────────────────────────────────────
+
+export const aiInsightsSchema = z.object({
+  summary: z.string().min(1),
+  strengths: z.array(z.string().min(1)).min(1),
+  improvementSuggestions: z.array(z.string().min(1)).min(1),
+});

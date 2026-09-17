@@ -150,20 +150,20 @@ describe("parseResumeText \u2014 sample3.pdf (known section-boundary bug)", () =
     expectNoHallucination(text, profile);
   });
 
-  // KNOWN BUG (architecture review #4d): confirmed still present after the
-  // unpdf migration — this is a real parser.ts defect, not a pdf-parse
-  // artifact. A "Technologies: ..." line with no preceding section heading
-  // ends up attributed to the Education entry's field. This test pins the
-  // CURRENT behavior so a future fix to this is a deliberate, visible
-  // change, not a silent regression.
-  it("pins the education.field value — a known, still-present parser.ts bug (#4d)", async () => {
+  // FIXED (architecture review #4d): a "Technologies: ..." line with no
+  // preceding section heading was previously misattributed to the
+  // Education entry's field. Now correctly skipped instead — the content
+  // has no proper Projects section to belong to in this fixture, so it is
+  // dropped rather than misattributed, per the project's core rule against
+  // inventing or misassigning extracted content.
+  it("no longer misattributes a stray Technologies line to education.field", async () => {
     const text = await extractText("sample3.pdf");
     const profile = parseResumeText(text);
 
     expect(profile.education.length).toBe(1);
-    expect(profile.education[0]?.field).toBe(
-      "Technologies: Vue, Django, PostgreSQL, Linux, Git",
-    );
+    expect(profile.education[0]?.field).toBeNull();
+    expect(profile.education[0]?.degree).toBe("B.A. Information Systems");
+    expect(profile.education[0]?.institution).toBe("State College");
   });
 });
 

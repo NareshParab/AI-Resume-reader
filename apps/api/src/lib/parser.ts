@@ -518,6 +518,13 @@ function parseEducationBlock(lines: string[]): EducationEntry[] {
       const t = line.trim();
       if (!t) continue;
 
+      // Skip "Technologies:"/"Tools:" lines entirely — these belong to a
+      // Projects section, not Education, and must never be attributed to
+      // this entry's degree/field, even via the fallback below (architecture
+      // review #4d). Reuses the same recognition pattern already used
+      // correctly in parseProjectsBlock.
+      if (/^(?:technologies?|tools?|tech\s+stack)\s*:?\s*(.+)/i.test(t)) continue;
+
       const expectedMatch = /expected|pursuing/i.test(t);
 
       // Strip year range from the line and process the remainder
