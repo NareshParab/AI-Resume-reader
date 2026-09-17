@@ -32,7 +32,7 @@ function normalizeText(text: string): string[] {
 }
 
 function extractSections(lines: string[]): Record<string, string[]> {
-  const sectionPatterns: Array<{ name: string; re: RegExp }> = [
+  const sectionPatterns: { name: string; re: RegExp }[] = [
     { name: "summary",     re: /^(professional\s+)?summary\s*:?\s*$/i },
     { name: "skills",      re: /^(technical\s+)?skills\s*:?\s*$/i },
     { name: "experience",  re: /^(work\s+)?(experience|history|employment(\s+history)?)\s*:?\s*$/i },
@@ -59,8 +59,12 @@ function extractSections(lines: string[]): Record<string, string[]> {
       }
     }
     if (!matched) {
-      if (!sections[current]) sections[current] = [];
-      (sections[current] as string[]).push(line);
+      let section = sections[current];
+      if (!section) {
+        section = [];
+        sections[current] = section;
+      }
+      section.push(line);
     }
   }
   return sections;
@@ -327,8 +331,8 @@ function parseExperienceBlock(lines: string[]): WorkExperienceEntry[] {
       // Full date range: "Apr 2026 – Present" — may appear inline with title/company
       const dateMatch = t.match(DATE_RANGE_RE);
       if (dateMatch) {
-        if (!entry.startDate) entry.startDate = dateMatch[1] ?? null;
-        if (!entry.endDate) entry.endDate = dateMatch[2] ?? null;
+        entry.startDate ??= dateMatch[1] ?? null;
+        entry.endDate ??= dateMatch[2] ?? null;
         // Strip the date portion from line and parse remaining as title/company if not yet set
         if (!entry.jobTitle) {
           const beforeDate = t.slice(0, dateMatch.index ?? 0).trim();
@@ -395,7 +399,7 @@ function parseExperienceBlock(lines: string[]): WorkExperienceEntry[] {
         entry.jobTitle = t;
         continue;
       }
-      if (!entry.company && !dateMatch && !entry.responsibilities.length) {
+      if (!entry.company && !entry.responsibilities.length) {
         entry.company = t;
       }
     }
@@ -424,7 +428,7 @@ function parseProjectsBlock(lines: string[]): ProjectEntry[] {
     const isNumbered = /^\d+[.)]\s+/.test(t);
     
     // Explicit title line: Title | Technologies — GitHub
-    const isExplicitTitle = !isBullet && /\|/.test(t) && t.length > 10;
+    const isExplicitTitle = !isBullet && t.includes("|") && t.length > 10;
     
     // New project block: numbered line or a capitalized non-bullet line after a block that already has content
     const isNewTitle = !isBullet && !isNumbered && /^[A-Z0-9]/.test(t) && cur.length > 0 &&
@@ -456,9 +460,9 @@ function parseProjectsBlock(lines: string[]): ProjectEntry[] {
 
       if (!entry.title) { 
         const titleTechMatch = t.match(/^(.+?)\s*\|\s*(.+?)(?:\s*(?:—|-|–)\s*GitHub)?$/i);
-        if (titleTechMatch && titleTechMatch[2] && titleTechMatch[1]) {
-          entry.title = (titleTechMatch[1] as string).trim();
-          entry.technologies = (titleTechMatch[2] as string).split(/[,|]/).map((s: string) => s.trim()).filter(Boolean);
+        if (titleTechMatch?.[2] && titleTechMatch[1]) {
+          entry.title = titleTechMatch[1].trim();
+          entry.technologies = titleTechMatch[2].split(/[,|]/).map((s: string) => s.trim()).filter(Boolean);
           continue;
         }
         entry.title = t; 

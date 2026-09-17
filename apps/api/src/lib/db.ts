@@ -2,8 +2,8 @@ import { MongoClient, type Db } from "mongodb";
 import { DEFAULT_MONGODB_DB_NAME, DEFAULT_MONGODB_URI } from "@gcarbon/config";
 
 // evaluated lazily
-function getUri() { return process.env["MONGODB_URI"] ?? DEFAULT_MONGODB_URI; }
-function getDbName() { return process.env["MONGODB_DB_NAME"] ?? DEFAULT_MONGODB_DB_NAME; }
+function getUri() { return process.env.MONGODB_URI ?? DEFAULT_MONGODB_URI; }
+function getDbName() { return process.env.MONGODB_DB_NAME ?? DEFAULT_MONGODB_DB_NAME; }
 
 let client: MongoClient | null = null;
 let database: Db | null = null;

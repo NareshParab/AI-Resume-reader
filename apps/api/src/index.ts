@@ -32,8 +32,8 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env["CORS_ORIGIN"]
-      ? [process.env["CORS_ORIGIN"]]
+    origin: process.env.CORS_ORIGIN
+      ? [process.env.CORS_ORIGIN]
       : [...CORS_ALLOWED_ORIGINS],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -66,38 +66,42 @@ app.use(
 );
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
-const port = Number(process.env["PORT"] ?? API_PORT);
+const port = Number(process.env.PORT ?? API_PORT);
 
-const server = app.listen(port, async () => {
-  console.log(`🚀 Gcarbon API running on http://localhost:${port}`);
-  console.log(`   Health:   http://localhost:${port}${API_BASE_PATH}/health`);
+const server = app.listen(port, () => {
+  console.log(`🚀 Gcarbon API running on http://localhost:${port.toString()}`);
+  console.log(`   Health:   http://localhost:${port.toString()}${API_BASE_PATH}/health`);
   console.log(`   Database: MongoDB`);
-  console.log(`   DB Name:  ${process.env["MONGODB_DB_NAME"] ?? "gcarbon_resume_ai"}`);
+  console.log(`   DB Name:  ${process.env.MONGODB_DB_NAME ?? "gcarbon_resume_ai"}`);
   
-  try {
-    const { connectDatabase } = await import("./lib/db.js");
-    await connectDatabase();
-    console.log(`[API] MongoDB connected successfully`);
-  } catch (e) {
-    console.error(`[API] Warning: Failed to connect to MongoDB on startup:`, e);
-  }
+  import("./lib/db.js")
+    .then(async ({ connectDatabase }) => {
+      await connectDatabase();
+      console.log(`[API] MongoDB connected successfully`);
+    })
+    .catch((e: unknown) => {
+      console.error(`[API] Warning: Failed to connect to MongoDB on startup:`, e);
+    });
 });
 
 // ─── Graceful shutdown ─────────────────────────────────────────────────────────
-async function shutdown(signal: string) {
+function shutdown(signal: string) {
   console.log(`\n[API] Received ${signal} — shutting down gracefully…`);
-  server.close(async () => {
-    try {
-      await closeDatabase();
-      console.log("[API] MongoDB connection closed");
-    } catch (e) {
-      console.error("[API] Error closing MongoDB:", e);
-    }
-    process.exit(0);
+  server.close(() => {
+    closeDatabase()
+      .then(() => {
+        console.log("[API] MongoDB connection closed");
+      })
+      .catch((e: unknown) => {
+        console.error("[API] Error closing MongoDB:", e);
+      })
+      .finally(() => {
+        process.exit(0);
+      });
   });
 }
 
-process.on("SIGTERM", () => { void shutdown("SIGTERM"); });
-process.on("SIGINT",  () => { void shutdown("SIGINT"); });
+process.on("SIGTERM", () => { shutdown("SIGTERM"); });
+process.on("SIGINT",  () => { shutdown("SIGINT"); });
 
 export { app };

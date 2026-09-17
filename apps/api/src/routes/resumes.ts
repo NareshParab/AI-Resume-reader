@@ -2,8 +2,13 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import multer from "multer";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const pdfParseLib = require("pdf-parse");
-const pdfParse = pdfParseLib.default || pdfParseLib;
+interface PdfParseResult {
+  text: string;
+}
+type PdfParseFunc = (dataBuffer: Buffer, options?: unknown) => Promise<PdfParseResult>;
+
+const pdfParseLib = require("pdf-parse") as { default?: PdfParseFunc } & PdfParseFunc;
+const pdfParse = pdfParseLib.default ?? pdfParseLib;
 import * as mammoth from "mammoth";
 import { getDatabase } from "../lib/db.js";
 import type { Resume } from "@gcarbon/types";
@@ -59,7 +64,7 @@ const EXTRACTION_TIMEOUT_MS = 15000;
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error(`${label} timed out after ${ms}ms`));
+      reject(new Error(`${label} timed out after ${ms.toString()}ms`));
     }, ms);
     promise
       .then((value) => {
@@ -92,13 +97,13 @@ resumesRouter.post("/upload", handleUpload, async (req, res) => {
 
     // Extract text based on file type
     if (file.mimetype === "application/pdf") {
-      const pdfData = await withTimeout<any>(pdfParse(file.buffer), EXTRACTION_TIMEOUT_MS, "PDF parsing");
+      const pdfData = await withTimeout<PdfParseResult>(pdfParse(file.buffer), EXTRACTION_TIMEOUT_MS, "PDF parsing");
       extractedText = pdfData.text;
     } else if (
       file.mimetype ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
-      const result = await withTimeout<any>(mammoth.extractRawText({ buffer: file.buffer }), EXTRACTION_TIMEOUT_MS, "DOCX parsing");
+      const result = await withTimeout<{ value: string }>(mammoth.extractRawText({ buffer: file.buffer }), EXTRACTION_TIMEOUT_MS, "DOCX parsing");
       extractedText = result.value;
     }
 
@@ -151,8 +156,8 @@ resumesRouter.post("/:id/parse", async (req, res) => {
     }
 
     const db = getDatabase();
-    // Use 'any' type for the collection so we don't trip over strict typing with _id vs string
-    const resumesCollection = db.collection("resumes");
+    // Typed collection to avoid 'any'
+    const resumesCollection = db.collection<Omit<Resume, "_id">>("resumes");
 
     let objectId;
     try {
@@ -181,8 +186,9 @@ resumesRouter.post("/:id/parse", async (req, res) => {
       { $set: { parsedProfile } }
     );
 
+    const { _id: _, ...rest } = resumeDoc;
     const updatedResume: Resume = {
-      ...(resumeDoc as any),
+      ...rest,
       parsedProfile,
       _id: id,
     };
