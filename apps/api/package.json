@@ -23,14 +23,13 @@
     "mammoth": "^1.12.3",
     "mongodb": "^6.0.0",
     "multer": "^2.3.0",
-    "pdf-parse": "1.1.1"
+    "unpdf": "^1.6.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/multer": "^2.2.0",
     "@types/node": "^22.0.0",
-    "@types/pdf-parse": "^1.1.5",
     "tsx": "^4.16.2",
     "vitest": "^2.1.8"
   }

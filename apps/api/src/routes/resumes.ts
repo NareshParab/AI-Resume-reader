@@ -1,14 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-interface PdfParseResult {
-  text: string;
-}
-type PdfParseFunc = (dataBuffer: Buffer, options?: unknown) => Promise<PdfParseResult>;
-
-const pdfParseLib = require("pdf-parse") as { default?: PdfParseFunc } & PdfParseFunc;
-const pdfParse = pdfParseLib.default ?? pdfParseLib;
+import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
 import * as mammoth from "mammoth";
 import { getDatabase } from "../lib/db.js";
 import type { Resume } from "@gcarbon/types";
@@ -97,8 +89,15 @@ resumesRouter.post("/upload", handleUpload, async (req, res) => {
 
     // Extract text based on file type
     if (file.mimetype === "application/pdf") {
-      const pdfData = await withTimeout<PdfParseResult>(pdfParse(file.buffer), EXTRACTION_TIMEOUT_MS, "PDF parsing");
-      extractedText = pdfData.text;
+      extractedText = await withTimeout(
+        (async () => {
+          const pdf = await getDocumentProxy(new Uint8Array(file.buffer));
+          const { text } = await extractPdfText(pdf, { mergePages: true });
+          return text;
+        })(),
+        EXTRACTION_TIMEOUT_MS,
+        "PDF parsing",
+      );
     } else if (
       file.mimetype ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

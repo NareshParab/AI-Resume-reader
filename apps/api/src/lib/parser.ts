@@ -102,10 +102,10 @@ function extractIdentity(headerLines: string[]) {
     const t = line.trim();
     if (!t) continue;
 
-    const emailMatch = t.match(emailRe);
+    const emailMatch = emailRe.exec(t);
     if (emailMatch && !email) { email = emailMatch[1] ?? null; continue; }
 
-    const phoneMatch = t.match(phoneRe);
+    const phoneMatch = phoneRe.exec(t);
     if (phoneMatch && !phone) {
       // Make sure this isn't just part of a longer number (e.g., year ranges)
       const raw = phoneMatch[0].replace(/\D/g, "");
@@ -329,15 +329,15 @@ function parseExperienceBlock(lines: string[]): WorkExperienceEntry[] {
       }
 
       // Full date range: "Apr 2026 – Present" — may appear inline with title/company
-      const dateMatch = t.match(DATE_RANGE_RE);
+      const dateMatch = DATE_RANGE_RE.exec(t);
       if (dateMatch) {
         entry.startDate ??= dateMatch[1] ?? null;
         entry.endDate ??= dateMatch[2] ?? null;
         // Strip the date portion from line and parse remaining as title/company if not yet set
         if (!entry.jobTitle) {
-          const beforeDate = t.slice(0, dateMatch.index ?? 0).trim();
+          const beforeDate = t.slice(0, dateMatch.index).trim();
           if (beforeDate) {
-            const titleCompany = beforeDate.match(/^(.+?)\s*(?:—|-{1,2}|@|\bat\b)\s*(.+)$/);
+            const titleCompany = /^(.+?)\s*(?:—|-{1,2}|@|\bat\b)\s*(.+)$/.exec(beforeDate);
             if (titleCompany) {
               entry.jobTitle = (titleCompany[1] ?? "").trim() || null;
               entry.company = (titleCompany[2] ?? "").trim() || null;
@@ -350,15 +350,15 @@ function parseExperienceBlock(lines: string[]): WorkExperienceEntry[] {
       }
 
       // Month-only range: "Apr – Jun 2025"
-      const monthRange = t.match(MONTH_RANGE_RE);
+      const monthRange = MONTH_RANGE_RE.exec(t);
       if (monthRange) {
-        if (!entry.startDate) entry.startDate = `${monthRange[1]} ${monthRange[3]}`;
-        if (!entry.endDate) entry.endDate = `${monthRange[2]} ${monthRange[3]}`;
+        entry.startDate ??= `${monthRange[1] ?? ""} ${monthRange[3] ?? ""}`;
+        entry.endDate ??= `${monthRange[2] ?? ""} ${monthRange[3] ?? ""}`;
         // Strip date portion and parse remaining as title/company if not yet set
         if (!entry.jobTitle) {
-          const beforeDate = t.slice(0, monthRange.index ?? 0).trim();
+          const beforeDate = t.slice(0, monthRange.index).trim();
           if (beforeDate) {
-            const titleCompany = beforeDate.match(/^(.+?)\s*(?:—|-{1,2}|@|\bat\b)\s*(.+)$/);
+            const titleCompany = /^(.+?)\s*(?:—|-{1,2}|@|\bat\b)\s*(.+)$/.exec(beforeDate);
             if (titleCompany) {
               entry.jobTitle = (titleCompany[1] ?? "").trim() || null;
               entry.company = (titleCompany[2] ?? "").trim() || null;
@@ -371,23 +371,23 @@ function parseExperienceBlock(lines: string[]): WorkExperienceEntry[] {
       }
 
       // Single date: "Dec 2024" or "Dec 2024 (1 month)" — standalone date-only line
-      const singleDate = t.match(SINGLE_DATE_RE);
+      const singleDate = SINGLE_DATE_RE.exec(t);
       if (singleDate && !entry.startDate && !entry.endDate) {
         const datePart = t.replace(/\s*\(.*\)/, "").trim();
         entry.endDate = datePart;
-        const durMatch = t.match(DURATION_RE);
+        const durMatch = DURATION_RE.exec(t);
         if (durMatch && !entry.duration) entry.duration = durMatch[1] ?? null;
         continue;
       }
 
       // Duration standalone (e.g., "(1 month)")
-      const durMatch = t.match(DURATION_RE);
+      const durMatch = DURATION_RE.exec(t);
       if (durMatch && !entry.duration) {
         entry.duration = durMatch[1] ?? null;
       }
 
       // Title — Company (separator variants: —, -, @, at)
-      const titleCompany = t.match(/^(.+?)\s*(?:—|-{1,2}|@|\bat\b)\s*(.+)$/);
+      const titleCompany = /^(.+?)\s*(?:—|-{1,2}|@|\bat\b)\s*(.+)$/.exec(t);
       if (titleCompany && !entry.jobTitle) {
         entry.jobTitle = (titleCompany[1] ?? "").trim() || null;
         entry.company  = (titleCompany[2] ?? "").trim() || null;
@@ -452,14 +452,14 @@ function parseProjectsBlock(lines: string[]): ProjectEntry[] {
       if (!t) continue;
 
       // Technologies line: "Technologies: X, Y, Z" or "Tools: X, Y"
-      const techMatch = t.match(/^(?:technologies?|tools?|tech\s+stack)\s*:?\s*(.+)/i);
+      const techMatch = /^(?:technologies?|tools?|tech\s+stack)\s*:?\s*(.+)/i.exec(t);
       if (techMatch) {
         entry.technologies = (techMatch[1] ?? "").split(/[,|]/).map((s: string) => s.trim()).filter(Boolean);
         continue;
       }
 
       if (!entry.title) { 
-        const titleTechMatch = t.match(/^(.+?)\s*\|\s*(.+?)(?:\s*(?:—|-|–)\s*GitHub)?$/i);
+        const titleTechMatch = /^(.+?)\s*\|\s*(.+?)(?:\s*(?:—|-|–)\s*GitHub)?$/i.exec(t);
         if (titleTechMatch?.[2] && titleTechMatch[1]) {
           entry.title = titleTechMatch[1].trim();
           entry.technologies = titleTechMatch[2].split(/[,|]/).map((s: string) => s.trim()).filter(Boolean);
@@ -521,7 +521,7 @@ function parseEducationBlock(lines: string[]): EducationEntry[] {
       const expectedMatch = /expected|pursuing/i.test(t);
 
       // Strip year range from the line and process the remainder
-      const yearRange = t.match(/(\d{4})\s*(?:–|-|to)\s*(\d{4})/);
+      const yearRange = /(\d{4})\s*(?:–|-|to)\s*(\d{4})/.exec(t);
       let remainder = t;
       if (yearRange) {
         if (!entry.startYear) {
@@ -535,14 +535,14 @@ function parseEducationBlock(lines: string[]): EducationEntry[] {
           .replace(/\(?\s*expected\s*\)?/i, "")
           .replace(/\(?\s*pursuing\s*\)?/i, "")
           .trim()
-          .replace(/[,—\-]+$/, "")
+          .replace(/[,—-]+$/, "")
           .trim();
         if (!remainder) continue; // nothing left on this line
       }
 
       // Check for single year in the remainder (no range found)
       if (!yearRange) {
-        const singleYear = remainder.match(/\b(\d{4})\b/);
+        const singleYear = /\b(\d{4})\b/.exec(remainder);
         if (singleYear && !entry.endYear) {
           entry.endYear = singleYear[1] ?? null;
           entry.expected = expectedMatch;
@@ -552,7 +552,7 @@ function parseEducationBlock(lines: string[]): EducationEntry[] {
             .replace(/\(?\s*expected\s*\)?/i, "")
             .replace(/\(?\s*pursuing\s*\)?/i, "")
             .trim()
-            .replace(/[,—\-]+$/, "")
+            .replace(/[,—-]+$/, "")
             .trim();
           if (!remainder) continue;
         }
@@ -562,11 +562,11 @@ function parseEducationBlock(lines: string[]): EducationEntry[] {
       const r = remainder;
 
       // Specialization: "Specialization in Data Science" or "Specialization: Data Science"
-      const specMatch = r.match(/(?:specialization|specialisation|major)\s+(?:in\s+)?:?\s*(.+)/i);
+      const specMatch = /(?:specialization|specialisation|major)\s+(?:in\s+)?:?\s*(.+)/i.exec(r);
       if (specMatch) {
-        if (!entry.field) entry.field = (specMatch[1] ?? "").trim().replace(/[,—\-]+$/, "").trim() || null;
+        entry.field ??= (specMatch[1] ?? "").trim().replace(/[,—-]+$/, "").trim() || null;
         // Also parse the part before "Specialization" as degree
-        const beforeSpec = r.slice(0, r.toLowerCase().indexOf("specializ")).trim().replace(/[—\-]+$/, "").trim();
+        const beforeSpec = r.slice(0, r.toLowerCase().indexOf("specializ")).trim().replace(/[—-]+$/, "").trim();
         if (beforeSpec && !entry.degree && degreeKw.test(beforeSpec)) {
           entry.degree = beforeSpec;
         }
@@ -600,8 +600,8 @@ function parseEducationBlock(lines: string[]): EducationEntry[] {
       }
 
       // Fallback: first unmatched remainder → degree or field
-      if (!entry.degree) entry.degree = r;
-      else if (!entry.field) entry.field = r;
+      if (!entry.degree) entry.degree ??= r;
+      else entry.field ??= r;
     }
 
     if (entry.degree || entry.institution) entries.push(entry);
@@ -634,8 +634,8 @@ function calcTotalExperience(entries: WorkExperienceEntry[]): number | null {
       if (/present|current/i.test(s)) return now;
       const full = new Date(s);
       if (!isNaN(full.getTime())) return full;
-      const yearMatch = s.match(/\b(\d{4})\b/);
-      if (yearMatch) return new Date(`Jan ${yearMatch[1]}`);
+      const yearMatch = /\b(\d{4})\b/.exec(s);
+      if (yearMatch) return new Date(`Jan ${yearMatch[1] ?? ""}`);
       return null;
     };
 

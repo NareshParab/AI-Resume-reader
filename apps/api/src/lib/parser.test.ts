@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createRequire } from "module";
+
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
@@ -7,9 +7,7 @@ import * as mammoth from "mammoth";
 import { parseResumeText } from "./parser.js";
 import type { ParsedProfile } from "@gcarbon/types";
 
-const require = createRequire(import.meta.url);
-const pdfParseLib = require("pdf-parse");
-const pdfParse = pdfParseLib.default || pdfParseLib;
+import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // apps/api/src/lib -> repo root -> test-resumes
@@ -25,8 +23,9 @@ async function extractText(fileName: string): Promise<string> {
   const buffer = fs.readFileSync(filePath);
   let text = "";
   if (fileName.endsWith(".pdf")) {
-    const data = await pdfParse(buffer);
-    text = data.text;
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const { text: pdfText } = await extractPdfText(pdf, { mergePages: true });
+    text = pdfText;
   } else if (fileName.endsWith(".docx")) {
     const result = await mammoth.extractRawText({ buffer });
     text = result.value;
@@ -88,13 +87,10 @@ describe("parseResumeText \u2014 Naresh_Parab_Data_Analyst_Resume_2026.pdf", () 
 });
 
 describe("parseResumeText \u2014 sample1.pdf", () => {
-  // KNOWN DEPENDENCY DEFECT: pdf-parse@1.1.1 throws "bad XRef entry" on this
-  // file in this environment — confirmed independently outside Vitest too.
-  // This is a pdf-parse reliability issue (architecture review #4e), not a
-  // parser.ts bug. Tracked as a future milestone: replace pdf-parse with an
-  // actively maintained library. it.fails() documents this as an expected,
-  // known failure rather than hiding or working around it.
-  it.fails("extracts a simple, well-formed resume exactly", async () => {
+  // Previously blocked by a pdf-parse extraction defect (architecture
+  // review #4e) — fixed by migrating to unpdf. Extraction now succeeds and
+  // produces identical output to what was originally captured.
+  it("extracts a simple, well-formed resume exactly", async () => {
     const text = await extractText("sample1.pdf");
     const profile = parseResumeText(text);
 
@@ -141,11 +137,9 @@ describe("parseResumeText \u2014 sample2.docx", () => {
 });
 
 describe("parseResumeText \u2014 sample3.pdf (known section-boundary bug)", () => {
-  // KNOWN DEPENDENCY DEFECT: pdf-parse@1.1.1 throws "bad XRef entry" on this
-  // file in this environment. Extraction fails before parseResumeText runs,
-  // so this can't currently verify parser behavior — see the sample1.pdf
-  // comment above for full context.
-  it.fails("extracts identity and work experience correctly", async () => {
+  // Previously blocked by a pdf-parse extraction defect — fixed by
+  // migrating to unpdf. See the sample1.pdf comment above for context.
+  it("extracts identity and work experience correctly", async () => {
     const text = await extractText("sample3.pdf");
     const profile = parseResumeText(text);
 
@@ -156,14 +150,13 @@ describe("parseResumeText \u2014 sample3.pdf (known section-boundary bug)", () =
     expectNoHallucination(text, profile);
   });
 
-  // Originally written to pin a known parser.ts field-contamination bug
-  // (architecture review #4d). Currently blocked earlier by the pdf-parse
-  // extraction failure above, so it can't reach that assertion either.
-  // Once pdf-parse is replaced, this should be revisited: if extraction
-  // succeeds again, confirm whether the #4d field-contamination bug is
-  // still present and update this test to pin whatever the real behavior
-  // is at that point.
-  it.fails("pins the education.field value, currently blocked by the pdf-parse extraction failure above", async () => {
+  // KNOWN BUG (architecture review #4d): confirmed still present after the
+  // unpdf migration — this is a real parser.ts defect, not a pdf-parse
+  // artifact. A "Technologies: ..." line with no preceding section heading
+  // ends up attributed to the Education entry's field. This test pins the
+  // CURRENT behavior so a future fix to this is a deliberate, visible
+  // change, not a silent regression.
+  it("pins the education.field value — a known, still-present parser.ts bug (#4d)", async () => {
     const text = await extractText("sample3.pdf");
     const profile = parseResumeText(text);
 
