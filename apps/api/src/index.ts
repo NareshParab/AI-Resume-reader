@@ -6,8 +6,10 @@ dotenv.config({ path: resolve(__dirname, "../../../.env") });
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { healthRouter } from "./routes/health.js";
 import { resumesRouter } from "./routes/resumes.js";
+import { authRouter } from "./routes/auth.js";
 import { API_PORT, API_BASE_PATH, CORS_ALLOWED_ORIGINS } from "@gcarbon/config";
 import { closeDatabase } from "./lib/db.js";
 
@@ -42,9 +44,11 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use(`${API_BASE_PATH}/health`, healthRouter);
+app.use(`${API_BASE_PATH}/auth`, authRouter);
 app.use(`${API_BASE_PATH}/resumes`, resumesRouter);
 
 // ─── 404 fallback ─────────────────────────────────────────────────────────────

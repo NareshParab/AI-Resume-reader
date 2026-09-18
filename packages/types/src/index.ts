@@ -1,5 +1,12 @@
 // ─── API Response envelope ────────────────────────────────────────────────────
 
+export interface User {
+  _id?: string;
+  email: string;
+  createdAt: string;
+}
+
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -105,6 +112,7 @@ export interface AiInsights {
 
 export interface Resume {
   _id?: string;
+  userId?: string;
   filename: string;
   fileType: string;
   extractedText: string;

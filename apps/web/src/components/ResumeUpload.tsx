@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type {
   Resume,
   ApiResponse,
@@ -285,9 +285,42 @@ export function ResumeUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Resume | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // On mount, check for ?id= in the URL and load that resume.
+  useEffect(() => {
+    const idParam = new URLSearchParams(window.location.search).get("id");
+    if (!idParam) return;
+    setIsLoading(true);
+    setError(null);
+    fetch(`/api/v1/resumes/${idParam}`)
+      .then(async (response) => {
+        const json = (await response.json()) as ApiResponse<Resume>;
+        if (response.ok && json.success && json.data) {
+          setResult(json.data);
+        } else {
+          setError("Could not load resume — it may not exist.");
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      })
+      .catch(() => {
+        setError("Could not load resume — it may not exist.");
+        window.history.replaceState(null, "", window.location.pathname);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  const handleReset = () => {
+    setResult(null);
+    setFile(null);
+    setError(null);
+    window.history.replaceState(null, "", window.location.pathname);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -305,13 +338,16 @@ export function ResumeUpload() {
     const formData = new FormData();
     formData.append("resume", file);
     try {
-      const response = await fetch("http://localhost:4000/api/v1/resumes/upload", {
+      const response = await fetch("/api/v1/resumes/upload", {
         method: "POST",
         body: formData,
       });
       const json = (await response.json()) as ApiResponse<Resume>;
       if (response.ok && json.success && json.data) {
         setResult(json.data);
+        if (json.data._id) {
+          window.history.replaceState(null, "", `?id=${json.data._id}`);
+        }
       } else {
         setError(json.error ?? "Failed to upload resume.");
       }
@@ -328,12 +364,15 @@ export function ResumeUpload() {
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:4000/api/v1/resumes/${result._id}/parse`,
+        `/api/v1/resumes/${result._id}/parse`,
         { method: "POST" }
       );
       const json = (await response.json()) as ApiResponse<Resume>;
       if (response.ok && json.success && json.data) {
         setResult(json.data);
+        if (json.data._id) {
+          window.history.replaceState(null, "", `?id=${json.data._id}`);
+        }
       } else {
         setError(json.error ?? "Failed to parse resume.");
       }
@@ -358,6 +397,9 @@ export function ResumeUpload() {
       const json = (await response.json()) as ApiResponse<Resume>;
       if (response.ok && json.success && json.data) {
         setResult(json.data);
+        if (json.data._id) {
+          window.history.replaceState(null, "", `?id=${json.data._id}`);
+        }
       } else {
         setError(json.error ?? "Failed to analyze resume.");
       }
@@ -370,11 +412,36 @@ export function ResumeUpload() {
     }
   };
 
+  // While loading a resume from a URL ?id= param, show a spinner.
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-8 flex items-center justify-center gap-3 text-slate-400">
+          <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+          <span className="text-sm font-medium">Loading resume…</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Upload zone */}
       <div className="rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-8">
-        <h2 className="text-xl font-semibold text-white mb-6">Upload Resume</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-white">Upload Resume</h2>
+          {result && (
+            <button
+              onClick={handleReset}
+              className="text-xs text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors"
+            >
+              Upload a different resume
+            </button>
+          )}
+        </div>
 
         <div className="space-y-6">
           <div
