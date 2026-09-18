@@ -2,13 +2,14 @@ import { Router } from "express";
 import { getDatabase } from "../lib/db.js";
 import { signupSchema, loginSchema } from "@gcarbon/schemas";
 import { hashPassword, verifyPassword, signToken } from "../lib/auth.js";
-import type { User } from "@gcarbon/types";
 
 export const authRouter = Router();
 
-// Store password hash in DB, but not in User type returned to frontend
-interface DbUser extends User {
+// Raw DB document — _id is managed by MongoDB (ObjectId), passwordHash never leaves server
+interface DbUser {
+  email: string;
   passwordHash: string;
+  createdAt: string;
 }
 
 authRouter.post("/signup", async (req, res) => {
@@ -38,9 +39,8 @@ authRouter.post("/signup", async (req, res) => {
     };
 
     const result = await usersCollection.insertOne(newUser);
-    const userId = result.insertedId;
 
-    const token = signToken(userId as unknown as string);
+    const token = signToken(result.insertedId.toHexString());
 
     res.cookie("authToken", token, {
       httpOnly: true,
@@ -83,7 +83,7 @@ authRouter.post("/login", async (req, res) => {
       return res.status(401).json({ success: false, error: "Invalid email or password." });
     }
 
-    const token = signToken(user._id as unknown as string);
+    const token = signToken(user._id.toHexString());
 
     res.cookie("authToken", token, {
       httpOnly: true,

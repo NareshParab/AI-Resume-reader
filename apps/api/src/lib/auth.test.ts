@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import express, { type Request, type Response } from "express";
 import cookieParser from "cookie-parser";
 import request from "supertest";
+import { ObjectId } from "mongodb";
 import { authRouter } from "../routes/auth.js";
 import { requireAuth, hashPassword, signToken, verifyToken } from "./auth.js";
 
@@ -118,7 +119,7 @@ describe("Auth System", () => {
 
       it("succeeds for a new user and sets a cookie", async () => {
         mockUsersCollection.findOne.mockResolvedValueOnce(null);
-        mockUsersCollection.insertOne.mockResolvedValueOnce({ insertedId: "new-user-id" });
+        mockUsersCollection.insertOne.mockResolvedValueOnce({ insertedId: new ObjectId() });
 
         const res = await request(app)
           .post("/auth/signup")
@@ -129,7 +130,7 @@ describe("Auth System", () => {
         expect(body.success).toBe(true);
         expect(body.data.email).toBe("new@example.com");
 
-        const cookies = res.headers["set-cookie"]!;
+        const cookies = res.headers["set-cookie"] as unknown as string[];
         expect(cookies).toBeDefined();
         expect(cookies[0]).toContain("authToken=");
         expect(cookies[0]).toContain("HttpOnly");
@@ -140,7 +141,7 @@ describe("Auth System", () => {
       it("fails with wrong password", async () => {
         const hash = await hashPassword("correct-password");
         mockUsersCollection.findOne.mockResolvedValueOnce({ 
-          _id: "user-id",
+          _id: new ObjectId(),
           email: "test@example.com", 
           passwordHash: hash 
         });
@@ -157,7 +158,7 @@ describe("Auth System", () => {
       it("succeeds with correct credentials and sets a cookie", async () => {
         const hash = await hashPassword("correct-password");
         mockUsersCollection.findOne.mockResolvedValueOnce({ 
-          _id: "user-id",
+          _id: new ObjectId(),
           email: "test@example.com", 
           passwordHash: hash 
         });
@@ -171,7 +172,7 @@ describe("Auth System", () => {
         expect(body.success).toBe(true);
         expect(body.data.email).toBe("test@example.com");
 
-        const cookies = res.headers["set-cookie"]!;
+        const cookies = res.headers["set-cookie"] as unknown as string[];
         expect(cookies).toBeDefined();
         expect(cookies[0]).toContain("authToken=");
       });
