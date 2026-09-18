@@ -60,7 +60,7 @@ describe("generateInsights", () => {
     expect(result.summary).toBe("A strong developer.");
     expect(result.strengths).toEqual(["TypeScript", "Experience"]);
     expect(result.improvementSuggestions).toEqual(["Add more projects"]);
-    expect(result.model).toBe("gemini-3.7-flash");
+    expect(result.model).toBe("gemini-3.5-flash");
     expect(result.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 

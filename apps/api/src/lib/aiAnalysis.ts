@@ -2,6 +2,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { aiInsightsSchema } from "@gcarbon/schemas";
 import type { ParsedProfile, AiInsights } from "@gcarbon/types";
 
+// gemini-2.5-flash became unavailable to new users and gemini-3.6-flash/
+// gemini-3.7-flash were both returning 503 (overloaded) as of Sep 2026.
+// gemini-3.5-flash is confirmed free-tier for this project (verified via
+// Google AI Studio's Billing Tier: Free tier, no billing account linked).
+// If this model becomes unavailable, check current free-tier model
+// availability before picking a replacement — don't assume paid-tier-only
+// models are free just because they're newer.
 const MODEL_NAME = "gemini-3.5-flash";
 
 export async function generateInsights(

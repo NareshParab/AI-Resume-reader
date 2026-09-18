@@ -284,6 +284,7 @@ export function ResumeUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Resume | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -342,6 +343,30 @@ export function ResumeUpload() {
       );
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!result?._id) return;
+    setIsAnalyzing(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `/api/v1/resumes/${result._id}/analyze`,
+        { method: "POST" }
+      );
+      const json = (await response.json()) as ApiResponse<Resume>;
+      if (response.ok && json.success && json.data) {
+        setResult(json.data);
+      } else {
+        setError(json.error ?? "Failed to analyze resume.");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred during analysis."
+      );
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -420,9 +445,9 @@ export function ResumeUpload() {
                 </div>
               </dl>
 
-              {/* Analyze button or parsed profile */}
-              {!result.parsedProfile ? (
-                <div className="flex justify-center pt-2">
+              {/* Actions & Results */}
+              <div className="flex justify-center gap-4 pt-2 mb-4">
+                {!result.parsedProfile ? (
                   <button
                     onClick={() => { void handleParse(); }}
                     disabled={isParsing}
@@ -437,12 +462,76 @@ export function ResumeUpload() {
                         Analyzing Profile…
                       </>
                     ) : (
-                      "Analyze / Parse Resume"
+                      "Parse Resume"
                     )}
                   </button>
-                </div>
-              ) : (
+                ) : !result.aiInsights ? (
+                  <button
+                    onClick={() => { void handleAnalyze(); }}
+                    disabled={isAnalyzing}
+                    className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl disabled:opacity-50 transition-all shadow-lg shadow-purple-600/20 flex items-center gap-2"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Generating Insights…
+                      </>
+                    ) : (
+                      "Generate AI Insights"
+                    )}
+                  </button>
+                ) : null}
+              </div>
+
+              {result.parsedProfile && (
                 <ParsedProfilePanel p={result.parsedProfile} />
+              )}
+              {result.aiInsights && (
+                <div className="mt-8 rounded-2xl bg-slate-900 border border-purple-500/30 shadow-2xl shadow-purple-500/10 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+                  <div className="bg-gradient-to-r from-purple-900/40 to-purple-800/20 px-6 py-5 border-b border-purple-500/30">
+                    <p className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">
+                      AI Insights
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      AI-generated interpretation, not extracted fact.
+                    </p>
+                  </div>
+                  <div className="p-6 space-y-6">
+                    <section>
+                      <SectionHeading>Summary</SectionHeading>
+                      <p className="text-sm text-slate-300 leading-relaxed">{result.aiInsights.summary}</p>
+                    </section>
+                    {result.aiInsights.strengths.length > 0 && (
+                      <section>
+                        <SectionHeading>Strengths</SectionHeading>
+                        <ul className="space-y-2">
+                          {result.aiInsights.strengths.map((s, i) => (
+                            <li key={i} className="flex gap-2 text-sm text-slate-300">
+                              <span className="text-green-500 shrink-0 font-bold">✓</span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                    {result.aiInsights.improvementSuggestions.length > 0 && (
+                      <section>
+                        <SectionHeading>Areas for Improvement</SectionHeading>
+                        <ul className="space-y-2">
+                          {result.aiInsights.improvementSuggestions.map((s, i) => (
+                            <li key={i} className="flex gap-2 text-sm text-slate-300">
+                              <span className="text-orange-500 shrink-0 font-bold">↑</span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </div>
+                </div>
               )}
 
               {/* Raw text collapsible */}

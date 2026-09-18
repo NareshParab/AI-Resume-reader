@@ -143,6 +143,46 @@ resumesRouter.post("/upload", handleUpload, async (req, res) => {
   }
 });
 
+resumesRouter.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const idResult = resumeIdParamSchema.safeParse({ id });
+    if (!idResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: idResult.error.issues[0]?.message ?? "Invalid resume ID format.",
+      });
+    }
+
+    const db = getDatabase();
+    const resumesCollection = db.collection<Omit<Resume, "_id">>("resumes");
+
+    let objectId;
+    try {
+      objectId = new ObjectId(id);
+    } catch {
+      return res.status(400).json({ success: false, error: "Invalid resume ID format." });
+    }
+
+    const resumeDoc = await resumesCollection.findOne({ _id: objectId });
+    if (!resumeDoc) {
+      return res.status(404).json({ success: false, error: "Resume not found." });
+    }
+
+    const { _id: _, ...rest } = resumeDoc;
+    const resume: Resume = { ...rest, _id: id };
+
+    res.status(200).json({ success: true, data: resume });
+  } catch (error) {
+    console.error("[Resume Get Error]:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to retrieve resume",
+    });
+  }
+});
+
 resumesRouter.post("/:id/parse", async (req, res) => {
   try {
     const { id } = req.params;
