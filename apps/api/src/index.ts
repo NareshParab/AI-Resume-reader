@@ -10,6 +10,7 @@ import cookieParser from "cookie-parser";
 import { healthRouter } from "./routes/health.js";
 import { resumesRouter } from "./routes/resumes.js";
 import { authRouter } from "./routes/auth.js";
+import { batchesRouter } from "./routes/batches.js";
 import { API_PORT, API_BASE_PATH, CORS_ALLOWED_ORIGINS } from "@gcarbon/config";
 import { closeDatabase } from "./lib/db.js";
 
@@ -50,6 +51,7 @@ app.use(cookieParser());
 app.use(`${API_BASE_PATH}/health`, healthRouter);
 app.use(`${API_BASE_PATH}/auth`, authRouter);
 app.use(`${API_BASE_PATH}/resumes`, resumesRouter);
+app.use(`${API_BASE_PATH}/batches`, batchesRouter);
 
 // ─── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

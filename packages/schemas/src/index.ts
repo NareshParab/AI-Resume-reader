@@ -59,3 +59,12 @@ export const aiInsightsSchema = z.object({
   strengths: z.array(z.string().min(1)).min(1),
   improvementSuggestions: z.array(z.string().min(1)).min(1),
 });
+
+// ─── Scoring ──────────────────────────────────────────────────────────────────
+
+export const candidateScoreSchema = z.object({
+  score: z.number().min(1).max(10),
+  reasoning: z.string().min(1),
+});
+
+export const jobDescriptionSchema = z.string().min(20).max(5000);

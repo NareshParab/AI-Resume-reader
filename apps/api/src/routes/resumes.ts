@@ -1,7 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
-import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
-import * as mammoth from "mammoth";
+import { extractResumeText } from "../lib/fileExtractor.js";
 import { getDatabase } from "../lib/db.js";
 import type { Resume } from "@gcarbon/types";
 import { ObjectId } from "mongodb";
@@ -86,29 +85,12 @@ resumesRouter.post("/upload", handleUpload, async (req, res) => {
       });
     }
 
-    let extractedText = "";
-
-    // Extract text based on file type
-    if (file.mimetype === "application/pdf") {
-      extractedText = await withTimeout(
-        (async () => {
-          const pdf = await getDocumentProxy(new Uint8Array(file.buffer));
-          const { text } = await extractPdfText(pdf, { mergePages: true });
-          return text;
-        })(),
-        EXTRACTION_TIMEOUT_MS,
-        "PDF parsing",
-      );
-    } else if (
-      file.mimetype ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ) {
-      const result = await withTimeout<{ value: string }>(mammoth.extractRawText({ buffer: file.buffer }), EXTRACTION_TIMEOUT_MS, "DOCX parsing");
-      extractedText = result.value;
-    }
-
-    // Clean up text
-    extractedText = extractedText.replace(/[ \t]+/g, " ").replace(/\n\s*\n/g, "\n\n").trim();
+    const label = file.mimetype === "application/pdf" ? "PDF parsing" : "DOCX parsing";
+    const extractedText = await withTimeout(
+      extractResumeText(file),
+      EXTRACTION_TIMEOUT_MS,
+      label
+    );
 
     const charCount = extractedText.length;
     const wordCount = extractedText.split(" ").filter((w) => w.length > 0).length;

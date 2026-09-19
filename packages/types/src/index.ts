@@ -110,9 +110,27 @@ export interface AiInsights {
   model: string;
 }
 
+export interface CandidateScore {
+  score: number;
+  reasoning: string;
+  generatedAt: string;
+  model: string;
+}
+
+export interface Batch {
+  _id?: string;
+  jobDescription: string;
+  status: "processing" | "completed";
+  totalCount: number;
+  completedCount: number;
+  failedCount: number;
+  createdAt: string;
+}
+
 export interface Resume {
   _id?: string;
   userId?: string;
+  batchId?: string;
   filename: string;
   fileType: string;
   extractedText: string;
@@ -121,4 +139,5 @@ export interface Resume {
   uploadedAt: string;
   parsedProfile?: ParsedProfile;
   aiInsights?: AiInsights;
+  candidateScore?: CandidateScore;
 }
