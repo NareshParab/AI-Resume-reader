@@ -8,6 +8,27 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
+  const retryDelays = [5000, 10000];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === retryDelays.length) {
+        throw error;
+      }
+      const retryDelay = retryDelays[attempt];
+      if (retryDelay === undefined) {
+        throw error;
+      }
+      await delay(retryDelay);
+    }
+  }
+
+  throw new Error("Retry operation failed unexpectedly.");
+}
+
 export async function processBatch(batchId: string): Promise<void> {
   try {
     const db = getDatabase();
@@ -40,12 +61,9 @@ export async function processBatch(batchId: string): Promise<void> {
         }
 
         const parsedProfile = parseResumeText(resume.extractedText);
-        
-        // Wait another 4 seconds between parse and score? No, parseResumeText is sync/offline, it doesn't use AI in this version.
-        // Wait, "Wait 4 seconds between each resume's AI call". scoreCandidate is the AI call.
-        // I will just add the delay at the start of the loop if it's not the first item. That satisfies "between each".
-
-        const candidateScore = await scoreCandidate(parsedProfile, batch.jobDescription);
+        const candidateScore = await withRetry(() =>
+          scoreCandidate(parsedProfile, batch.jobDescription)
+        );
 
         await resumesCollection.updateOne(
           { _id: resume._id },

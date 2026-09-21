@@ -6,6 +6,7 @@ import type { Resume } from "@gcarbon/types";
 import { ObjectId } from "mongodb";
 import { parseResumeText } from "../lib/parser.js";
 import { generateInsights } from "../lib/aiAnalysis.js";
+import { withTimeout } from "../lib/withTimeout.js";
 import { resumeIdParamSchema, resumeFileMetadataSchema } from "@gcarbon/schemas";
 
 export const resumesRouter = Router();
@@ -52,23 +53,6 @@ function handleUpload(req: Request, res: Response, next: NextFunction) {
 }
 
 const EXTRACTION_TIMEOUT_MS = 15000;
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(`${label} timed out after ${ms.toString()}ms`));
-    }, ms);
-    promise
-      .then((value) => {
-        clearTimeout(timer);
-        resolve(value);
-      })
-      .catch((err: unknown) => {
-        clearTimeout(timer);
-        reject(err instanceof Error ? err : new Error(String(err)));
-      });
-  });
-}
 
 resumesRouter.post("/upload", handleUpload, async (req, res) => {
   try {

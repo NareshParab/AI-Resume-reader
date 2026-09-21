@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { HealthStatus, ApiResponse } from "@gcarbon/types";
 import { APP_NAME, APP_VERSION } from "@gcarbon/config";
 import { ResumeUpload } from "./components/ResumeUpload";
+import { BatchUpload } from "./components/BatchUpload";
 
 type FetchState<T> =
   | { status: "idle" }
@@ -162,9 +163,9 @@ export default function App() {
       {/* Health check */}
       <HealthCard />
 
-      {/* Resume Upload Module */}
+      {/* Resume / Batch tab toggle + upload module */}
       <div className="w-full max-w-4xl pt-8 border-t border-slate-800">
-        <ResumeUpload />
+        <TabToggle />
       </div>
 
       {/* Footer */}
@@ -174,6 +175,45 @@ export default function App() {
         API →{" "}
         <span className="font-mono text-slate-500">:4000</span>
       </footer>
+    </div>
+  );
+}
+
+// ─── Tab toggle ───────────────────────────────────────────────────────────────
+
+type Tab = "single" | "batch";
+
+function TabToggle() {
+  const [activeTab, setActiveTab] = useState<Tab>("single");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-2 p-1 rounded-xl bg-slate-800 border border-slate-700 w-fit">
+        <button
+          id="tab-single-resume"
+          onClick={() => { setActiveTab("single"); }}
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === "single"
+              ? "bg-brand-600 text-white shadow"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Single Resume
+        </button>
+        <button
+          id="tab-batch-upload"
+          onClick={() => { setActiveTab("batch"); }}
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === "batch"
+              ? "bg-brand-600 text-white shadow"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Batch Upload
+        </button>
+      </div>
+
+      {activeTab === "single" ? <ResumeUpload /> : <BatchUpload />}
     </div>
   );
 }

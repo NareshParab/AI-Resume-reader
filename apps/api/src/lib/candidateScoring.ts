@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { candidateScoreSchema } from "@gcarbon/schemas";
 import type { ParsedProfile, CandidateScore } from "@gcarbon/types";
+import { withTimeout } from "./withTimeout.js";
 
 const MODEL_NAME = "gemini-3.5-flash";
 
@@ -38,21 +39,25 @@ ${JSON.stringify(profile, null, 2)}
 `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            score: { type: Type.NUMBER },
-            reasoning: { type: Type.STRING },
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: MODEL_NAME,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              score: { type: Type.NUMBER },
+              reasoning: { type: Type.STRING },
+            },
+            required: ["score", "reasoning"],
           },
-          required: ["score", "reasoning"],
         },
-      },
-    });
+      }),
+      30000,
+      "Candidate scoring"
+    );
 
     if (!response.text) {
       throw new Error("AI returned an empty response.");
