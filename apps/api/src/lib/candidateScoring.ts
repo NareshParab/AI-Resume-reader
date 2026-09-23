@@ -28,8 +28,9 @@ I am providing you with a job description and an already-extracted, structured c
 CRITICAL INSTRUCTIONS:
 1. Score the candidate from 1 to 10 on how well they match the job description.
 2. Provide a concise reasoning for the score.
-3. Do not invent, hallucinate, or assume any factual claims, skills, or experience not explicitly present in the provided JSON profile.
-4. Return ONLY valid JSON matching the exact requested schema.
+3. Identify which specific skills mentioned in the job description are actually evidenced in the candidate's resume (in their listed skills, work experience, or projects) — do not invent or assume a skill is present if it isn't clearly shown in the resume data provided.
+4. Do not invent, hallucinate, or assume any factual claims, skills, or experience not explicitly present in the provided JSON profile.
+5. Return ONLY valid JSON matching the exact requested schema.
 
 Job Description:
 ${jobDescription}
@@ -50,8 +51,9 @@ ${JSON.stringify(profile, null, 2)}
             properties: {
               score: { type: Type.NUMBER },
               reasoning: { type: Type.STRING },
+              matchedSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
-            required: ["score", "reasoning"],
+            required: ["score", "reasoning", "matchedSkills"],
           },
         },
       }),

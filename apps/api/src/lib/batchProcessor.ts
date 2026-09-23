@@ -1,32 +1,12 @@
 import { getDatabase } from "./db.js";
 import { parseResumeText } from "./parser.js";
 import { scoreCandidate } from "./candidateScoring.js";
+import { withRetry } from "./withRetry.js";
 import { ObjectId } from "mongodb";
 import type { Resume, Batch } from "@gcarbon/types";
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
-  const retryDelays = [5000, 10000];
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (attempt === retryDelays.length) {
-        throw error;
-      }
-      const retryDelay = retryDelays[attempt];
-      if (retryDelay === undefined) {
-        throw error;
-      }
-      await delay(retryDelay);
-    }
-  }
-
-  throw new Error("Retry operation failed unexpectedly.");
 }
 
 export async function processBatch(batchId: string): Promise<void> {

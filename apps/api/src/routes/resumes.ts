@@ -7,6 +7,8 @@ import { ObjectId } from "mongodb";
 import { parseResumeText } from "../lib/parser.js";
 import { generateInsights } from "../lib/aiAnalysis.js";
 import { withTimeout } from "../lib/withTimeout.js";
+import { withRetry } from "../lib/withRetry.js";
+import { requireAuth } from "../lib/auth.js";
 import { resumeIdParamSchema, resumeFileMetadataSchema } from "@gcarbon/schemas";
 
 export const resumesRouter = Router();
@@ -54,11 +56,16 @@ function handleUpload(req: Request, res: Response, next: NextFunction) {
 
 const EXTRACTION_TIMEOUT_MS = 15000;
 
-resumesRouter.post("/upload", handleUpload, async (req, res) => {
+resumesRouter.post("/upload", requireAuth, handleUpload, async (req, res) => {
   try {
     const file = req.file;
     if (!file) {
       return res.status(400).json({ success: false, error: "No file uploaded." });
+    }
+
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Authentication required." });
     }
 
     const fileMetaResult = resumeFileMetadataSchema.safeParse(file);
@@ -80,6 +87,7 @@ resumesRouter.post("/upload", handleUpload, async (req, res) => {
     const wordCount = extractedText.split(" ").filter((w) => w.length > 0).length;
 
     const resumeDoc: Omit<Resume, "_id"> = {
+      userId,
       filename: file.originalname,
       fileType: file.mimetype,
       extractedText,
@@ -109,9 +117,9 @@ resumesRouter.post("/upload", handleUpload, async (req, res) => {
   }
 });
 
-resumesRouter.get("/:id", async (req, res) => {
+resumesRouter.get("/:id", requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const idResult = resumeIdParamSchema.safeParse({ id });
     if (!idResult.success) {
@@ -132,7 +140,7 @@ resumesRouter.get("/:id", async (req, res) => {
     }
 
     const resumeDoc = await resumesCollection.findOne({ _id: objectId });
-    if (!resumeDoc) {
+    if (!resumeDoc || resumeDoc.userId !== req.userId) {
       return res.status(404).json({ success: false, error: "Resume not found." });
     }
 
@@ -149,9 +157,9 @@ resumesRouter.get("/:id", async (req, res) => {
   }
 });
 
-resumesRouter.post("/:id/parse", async (req, res) => {
+resumesRouter.post("/:id/parse", requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const idResult = resumeIdParamSchema.safeParse({ id });
     if (!idResult.success) {
@@ -173,7 +181,7 @@ resumesRouter.post("/:id/parse", async (req, res) => {
     }
 
     const resumeDoc = await resumesCollection.findOne({ _id: objectId });
-    if (!resumeDoc) {
+    if (!resumeDoc || resumeDoc.userId !== req.userId) {
       return res.status(404).json({ success: false, error: "Resume not found." });
     }
 
@@ -209,9 +217,9 @@ resumesRouter.post("/:id/parse", async (req, res) => {
   }
 });
 
-resumesRouter.post("/:id/analyze", async (req, res) => {
+resumesRouter.post("/:id/analyze", requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const idResult = resumeIdParamSchema.safeParse({ id });
     if (!idResult.success) {
@@ -232,7 +240,7 @@ resumesRouter.post("/:id/analyze", async (req, res) => {
     }
 
     const resumeDoc = await resumesCollection.findOne({ _id: objectId });
-    if (!resumeDoc) {
+    if (!resumeDoc || resumeDoc.userId !== req.userId) {
       return res.status(404).json({ success: false, error: "Resume not found." });
     }
 
@@ -243,10 +251,8 @@ resumesRouter.post("/:id/analyze", async (req, res) => {
       });
     }
 
-    const aiInsights = await withTimeout(
-      generateInsights(resumeDoc.parsedProfile),
-      30000,
-      "AI analysis"
+    const aiInsights = await withRetry(() =>
+      withTimeout(generateInsights(resumeDoc.parsedProfile!), 30000, "AI analysis")
     );
 
     await resumesCollection.updateOne(

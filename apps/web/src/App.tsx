@@ -3,6 +3,7 @@ import type { HealthStatus, ApiResponse } from "@gcarbon/types";
 import { APP_NAME, APP_VERSION } from "@gcarbon/config";
 import { ResumeUpload } from "./components/ResumeUpload";
 import { BatchUpload } from "./components/BatchUpload";
+import { AuthForm } from "./components/AuthForm";
 
 type FetchState<T> =
   | { status: "idle" }
@@ -127,6 +128,40 @@ function HealthCard() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const checkAuth = () => {
+    setIsCheckingAuth(true);
+    fetch("/api/v1/auth/me")
+      .then((response) => {
+        setIsAuthenticated(response.ok);
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+      })
+      .finally(() => {
+        setIsCheckingAuth(false);
+      });
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/v1/auth/logout", { method: "POST" });
+    setIsAuthenticated(false);
+  };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-400">
+        Checking authentication…
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-10 px-4 py-16 bg-slate-900">
       {/* Hero */}
@@ -163,10 +198,26 @@ export default function App() {
       {/* Health check */}
       <HealthCard />
 
-      {/* Resume / Batch tab toggle + upload module */}
-      <div className="w-full max-w-4xl pt-8 border-t border-slate-800">
-        <TabToggle />
-      </div>
+      {!isAuthenticated ? (
+        <AuthForm onAuthenticated={checkAuth} />
+      ) : (
+        <>
+          <div className="w-full max-w-4xl flex justify-end">
+            <button
+              type="button"
+              onClick={() => { void handleLogout(); }}
+              className="text-xs text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+
+          {/* Resume / Batch tab toggle + upload module */}
+          <div className="w-full max-w-4xl pt-8 border-t border-slate-800">
+            <TabToggle />
+          </div>
+        </>
+      )}
 
       {/* Footer */}
       <footer className="text-slate-600 text-xs mt-8">

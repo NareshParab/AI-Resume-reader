@@ -52,6 +52,7 @@ describe("scoreCandidate", () => {
     const validJson = JSON.stringify({
       score: 8,
       reasoning: "Candidate has the required TypeScript experience.",
+      matchedSkills: ["TypeScript"],
     });
 
     const mockClient = createMockClient(validJson);
@@ -59,6 +60,7 @@ describe("scoreCandidate", () => {
 
     expect(result.score).toBe(8);
     expect(result.reasoning).toBe("Candidate has the required TypeScript experience.");
+    expect(result.matchedSkills).toEqual(["TypeScript"]);
     expect(result.model).toBe("gemini-3.5-flash");
     expect(result.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
@@ -67,6 +69,7 @@ describe("scoreCandidate", () => {
     const invalidJson = JSON.stringify({
       score: 11, // Over the max of 10
       reasoning: "Candidate is amazing.",
+      matchedSkills: ["TypeScript"],
     });
 
     const mockClient = createMockClient(invalidJson);
@@ -74,6 +77,19 @@ describe("scoreCandidate", () => {
     await expect(scoreCandidate(mockProfile, mockJobDescription, mockClient)).rejects.toThrow(
       /Failed to score candidate/
     );
+  });
+
+  it("accepts an empty matchedSkills array when there are no matches", async () => {
+    const validJson = JSON.stringify({
+      score: 3,
+      reasoning: "Candidate does not show evidence of the required skills.",
+      matchedSkills: [],
+    });
+
+    const mockClient = createMockClient(validJson);
+    const result = await scoreCandidate(mockProfile, mockJobDescription, mockClient);
+
+    expect(result.matchedSkills).toEqual([]);
   });
 
   it("throws a clear error when the API call fails or times out", async () => {

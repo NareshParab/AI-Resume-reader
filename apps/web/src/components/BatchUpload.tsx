@@ -178,7 +178,7 @@ export function BatchUpload() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">Score</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Reasoning</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-24">Exp (yrs)</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Top Skills</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Matched Skills (AI)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -231,7 +231,7 @@ export function BatchUpload() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {(profile?.skills.slice(0, 5) ?? []).map((skill, i) => (
+                        {(score?.matchedSkills.slice(0, 5) ?? []).map((skill, i) => (
                           <span
                             key={i}
                             className="px-1.5 py-0.5 rounded text-xs bg-slate-700 text-slate-300 border border-slate-600"
@@ -239,7 +239,7 @@ export function BatchUpload() {
                             {skill}
                           </span>
                         ))}
-                        {!profile?.skills.length && (
+                        {!score?.matchedSkills.length && (
                           <span className="text-slate-600 text-xs">—</span>
                         )}
                       </div>

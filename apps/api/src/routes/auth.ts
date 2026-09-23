@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { ObjectId } from "mongodb";
 import { getDatabase } from "../lib/db.js";
 import { signupSchema, loginSchema } from "@gcarbon/schemas";
-import { hashPassword, verifyPassword, signToken } from "../lib/auth.js";
+import { hashPassword, verifyPassword, signToken, requireAuth } from "../lib/auth.js";
 
 export const authRouter = Router();
 
@@ -98,6 +99,33 @@ authRouter.post("/login", async (req, res) => {
     });
   } catch (error) {
     console.error("[Login Error]:", error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+});
+
+authRouter.get("/me", requireAuth, async (req, res) => {
+  try {
+    const db = getDatabase();
+    const usersCollection = db.collection<DbUser>("users");
+
+    let userId: ObjectId;
+    try {
+      userId = new ObjectId(req.userId);
+    } catch {
+      return res.status(404).json({ success: false, error: "User not found." });
+    }
+
+    const user = await usersCollection.findOne({ _id: userId });
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found." });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { email: user.email },
+    });
+  } catch (error) {
+    console.error("[Me Error]:", error);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 });

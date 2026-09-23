@@ -113,12 +113,14 @@ export interface AiInsights {
 export interface CandidateScore {
   score: number;
   reasoning: string;
+  matchedSkills: string[];
   generatedAt: string;
   model: string;
 }
 
 export interface Batch {
   _id?: string;
+  userId?: string;
   jobDescription: string;
   status: "processing" | "completed";
   totalCount: number;

@@ -7,6 +7,7 @@ import { ObjectId } from "mongodb";
 import { resumeIdParamSchema, resumeFileMetadataSchema, jobDescriptionSchema } from "@gcarbon/schemas";
 import { processBatch } from "../lib/batchProcessor.js";
 import { withTimeout } from "../lib/withTimeout.js";
+import { requireAuth } from "../lib/auth.js";
 
 export const batchesRouter = Router();
 
@@ -59,7 +60,7 @@ function handleUpload(req: Request, res: Response, next: NextFunction) {
 
 const EXTRACTION_TIMEOUT_MS = 15000;
 
-batchesRouter.post("/", handleUpload, async (req, res) => {
+batchesRouter.post("/", requireAuth, handleUpload, async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[] | undefined;
     if (!files || files.length === 0 || files.length > 20) {
@@ -86,10 +87,16 @@ batchesRouter.post("/", handleUpload, async (req, res) => {
       }
     }
 
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Authentication required." });
+    }
+
     const db = getDatabase();
     
     // Create batch document first to get its ID
     const batchDoc: Omit<Batch, "_id"> = {
+      userId,
       jobDescription: jdResult.data,
       status: "processing",
       totalCount: files.length,
@@ -114,6 +121,7 @@ batchesRouter.post("/", handleUpload, async (req, res) => {
       const wordCount = extractedText.split(" ").filter((w) => w.length > 0).length;
 
       const resumeDoc: Omit<Resume, "_id"> = {
+        userId,
         batchId,
         filename: file.originalname,
         fileType: file.mimetype,
@@ -149,9 +157,9 @@ batchesRouter.post("/", handleUpload, async (req, res) => {
   }
 });
 
-batchesRouter.get("/:id", async (req, res) => {
+batchesRouter.get("/:id", requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     // Use existing regex validation from resumeIdParamSchema for batch ID
     const idResult = resumeIdParamSchema.safeParse({ id });
@@ -173,7 +181,7 @@ batchesRouter.get("/:id", async (req, res) => {
     }
 
     const batchDoc = await batchesCollection.findOne({ _id: objectId });
-    if (!batchDoc) {
+    if (!batchDoc || batchDoc.userId !== req.userId) {
       return res.status(404).json({ success: false, error: "Batch not found." });
     }
 
