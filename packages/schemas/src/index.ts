@@ -68,4 +68,4 @@ export const candidateScoreSchema = z.object({
   matchedSkills: z.array(z.string().min(1)),
 });
 
-export const jobDescriptionSchema = z.string().min(20).max(5000);
+export const jobDescriptionSchema = z.string().min(20).max(10000);
