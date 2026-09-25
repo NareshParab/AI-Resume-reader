@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { resolve, dirname } from "path";
+import path from "path";
 import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, "../../../.env") });
@@ -52,6 +53,18 @@ app.use(`${API_BASE_PATH}/health`, healthRouter);
 app.use(`${API_BASE_PATH}/auth`, authRouter);
 app.use(`${API_BASE_PATH}/resumes`, resumesRouter);
 app.use(`${API_BASE_PATH}/batches`, batchesRouter);
+
+if (process.env.NODE_ENV === "production") {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const webDistPath = path.join(__dirname, "../../web/dist");
+
+  app.use(express.static(webDistPath));
+
+  app.get(/^(?!\/api\/).*/, (_req, res) => {
+    res.sendFile(path.join(webDistPath, "index.html"));
+  });
+}
 
 // ─── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

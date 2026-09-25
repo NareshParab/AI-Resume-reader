@@ -15,6 +15,7 @@
     "dev:worker": "npm run dev --workspace=workers",
     "build:packages": "tsc -b packages/types packages/config packages/schemas",
     "build": "npm run build:packages && npm run build --workspaces --if-present",
+    "start": "npm run start --workspace=apps/api",
     "build:web": "npm run build --workspace=apps/web",
     "build:api": "npm run build --workspace=apps/api",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
