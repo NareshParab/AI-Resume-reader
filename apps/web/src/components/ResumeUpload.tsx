@@ -18,17 +18,23 @@ const ALLOWED_TYPES = new Set([
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h5 className="text-xs font-bold text-muted uppercase tracking-widest mb-3 flex items-center gap-2">
-      <span className="flex-1 border-t border-soft" />
+    <h5
+      className="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2"
+      style={{ color: "var(--muted)" }}
+    >
+      <span className="flex-1 border-t" style={{ borderColor: "var(--border-soft)" }} />
       {children}
-      <span className="flex-1 border-t border-soft" />
+      <span className="flex-1 border-t" style={{ borderColor: "var(--border-soft)" }} />
     </h5>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value: string | null }) {
   return (
-    <div className="flex gap-3 items-start py-1.5 border-b border-soft">
+    <div
+      className="flex gap-3 items-start py-1.5 border-b"
+      style={{ borderColor: "var(--border-soft)" }}
+    >
       <span className="w-24 shrink-0 text-xs font-semibold text-muted uppercase tracking-wide pt-0.5">
         {label}
       </span>
@@ -37,22 +43,37 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function SkillPill({ label, className }: { label: string; className?: string }) {
+function SkillPill({ label, pillStyle }: { label: string; pillStyle?: React.CSSProperties | undefined }) {
+  const defaultStyle: React.CSSProperties = {
+    background: "var(--bg-surface2)",
+    color: "var(--body)",
+    border: "1px solid var(--border)",
+  };
   return (
-    <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${className ?? "border-default bg-surface-2 text-body"}`}>
+    <span
+      className="px-2.5 py-1 rounded-md text-xs font-medium"
+      style={pillStyle ?? defaultStyle}
+    >
       {label}
     </span>
   );
 }
 
-function SkillGroup({ heading, items, className }: { heading: string; items: string[]; className?: string }) {
+interface SkillGroupProps {
+  heading: string;
+  items: string[];
+  pillStyle?: React.CSSProperties | undefined;
+}
+
+function SkillGroup({ heading, items, pillStyle }: SkillGroupProps) {
   if (items.length === 0) return null;
-  const pillClass = className;
   return (
     <div className="mb-4">
       <p className="text-xs font-semibold text-muted mb-2">{heading}</p>
       <div className="flex flex-wrap gap-1.5">
-        {items.map((s, i) => <SkillPill key={i} label={s} {...(pillClass !== undefined ? { className: pillClass } : {})} />)}
+        {items.map((s, i) => (
+          <SkillPill key={i} label={s} {...(pillStyle !== undefined ? { pillStyle } : {})} />
+        ))}
       </div>
     </div>
   );
@@ -60,15 +81,25 @@ function SkillGroup({ heading, items, className }: { heading: string; items: str
 
 function ExperienceCard({ entry, index }: { entry: WorkExperienceEntry; index: number }) {
   return (
-    <div className="relative pl-5 before:absolute before:left-0 before:top-1 before:h-full before:border-l-2 before:border-soft">
+    <div
+      className="relative pl-5"
+      style={{
+        borderLeft: "2px solid var(--border)",
+        paddingBottom: "0.25rem",
+      }}
+    >
       <div
         className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full border-2"
-        style={{ background: "var(--accent)", borderColor: "var(--bg)" }}
+        style={{ background: "var(--accent)", borderColor: "var(--bg-surface)" }}
       />
       <div className="mb-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="text-sm font-semibold text-ink">{index + 1}. {entry.jobTitle ?? "Unknown Role"}</span>
+        <span className="text-sm font-semibold text-ink">
+          {index + 1}. {entry.jobTitle ?? "Unknown Role"}
+        </span>
         {entry.company && (
-          <span className="text-sm font-medium text-accent">— {entry.company}</span>
+          <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>
+            — {entry.company}
+          </span>
         )}
       </div>
       {(entry.startDate ?? entry.endDate ?? entry.duration) && (
@@ -93,12 +124,30 @@ function ExperienceCard({ entry, index }: { entry: WorkExperienceEntry; index: n
 
 function ProjectCard({ entry, index }: { entry: ProjectEntry; index: number }) {
   return (
-    <div className="p-4 rounded-xl bg-surface-2 border border-default">
-      <p className="text-sm font-semibold text-ink mb-1.5">{index + 1}. {entry.title ?? "Untitled Project"}</p>
+    <div
+      className="p-4 rounded-xl"
+      style={{
+        background: "var(--bg-surface2)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <p className="text-sm font-semibold text-ink mb-1.5">
+        {index + 1}. {entry.title ?? "Untitled Project"}
+      </p>
       {entry.technologies.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
           {entry.technologies.map((t, i) => (
-            <span key={i} className="px-2 py-0.5 rounded text-xs font-medium bg-surface border border-default text-body">{t}</span>
+            <span
+              key={i}
+              className="px-2 py-0.5 rounded text-xs font-medium"
+              style={{
+                background: "var(--bg-surface)",
+                color: "var(--body)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {t}
+            </span>
           ))}
         </div>
       )}
@@ -111,7 +160,10 @@ function ProjectCard({ entry, index }: { entry: ProjectEntry; index: number }) {
 
 function EducationCard({ entry }: { entry: EducationEntry }) {
   return (
-    <div className="p-3 rounded-lg bg-surface border border-default">
+    <div
+      className="p-3 rounded-lg"
+      style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}
+    >
       <p className="text-sm font-semibold text-ink">{entry.degree ?? "Unknown Degree"}</p>
       {entry.field && (
         <p className="text-xs font-medium mt-0.5" style={{ color: "var(--accent)" }}>
@@ -129,16 +181,67 @@ function EducationCard({ entry }: { entry: EducationEntry }) {
   );
 }
 
+// ─── Skill palette — dark-mode appropriate ────────────────────────────────────
+
+const SKILL_STYLES: Record<string, React.CSSProperties> = {
+  programming: {
+    background: "rgba(99,102,241,0.08)",
+    color: "#818CF8",
+    border: "1px solid rgba(99,102,241,0.22)",
+  },
+  databases: {
+    background: "rgba(139,92,246,0.08)",
+    color: "#A78BFA",
+    border: "1px solid rgba(139,92,246,0.22)",
+  },
+  python: {
+    background: "rgba(234,179,8,0.07)",
+    color: "#FCD34D",
+    border: "1px solid rgba(234,179,8,0.18)",
+  },
+  bi: {
+    background: "rgba(249,115,22,0.07)",
+    color: "#FDBA74",
+    border: "1px solid rgba(249,115,22,0.18)",
+  },
+  analytics: {
+    background: "rgba(20,184,166,0.07)",
+    color: "#5EEAD4",
+    border: "1px solid rgba(20,184,166,0.18)",
+  },
+  ai: {
+    background: "rgba(34,211,238,0.07)",
+    color: "#67E8F9",
+    border: "1px solid rgba(34,211,238,0.18)",
+  },
+};
+
 // ─── Parsed profile panel ─────────────────────────────────────────────────────
 
 function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
   const sc = p.skillCategories;
 
   return (
-    <div className="mt-6 rounded-2xl border border-default bg-surface shadow-panel overflow-hidden animate-slide-up">
-      {/* Header — extracted fact, warm accent */}
-      <div className="px-6 py-5 border-b border-default" style={{ background: "var(--accent-lite)" }}>
-        <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
+    <div
+      className="mt-6 rounded-2xl overflow-hidden animate-slide-up"
+      style={{
+        background: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.35)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="px-6 py-5 border-b"
+        style={{
+          background: "rgba(99,102,241,0.06)",
+          borderColor: "rgba(99,102,241,0.12)",
+        }}
+      >
+        <p
+          className="text-xs font-bold uppercase tracking-widest mb-1"
+          style={{ color: "var(--accent)" }}
+        >
           Extracted Profile
         </p>
         <p className="text-2xl font-display font-bold text-ink tracking-tight">
@@ -147,18 +250,16 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
       </div>
 
       <div className="p-6 space-y-7">
-
         {/* Contact */}
         <section>
           <SectionHeading>Contact</SectionHeading>
           <div className="space-y-0.5">
-            <InfoRow label="Email" value={p.email} />
-            <InfoRow label="Phone" value={p.phone} />
+            <InfoRow label="Email"    value={p.email} />
+            <InfoRow label="Phone"    value={p.phone} />
             <InfoRow label="Location" value={p.location} />
           </div>
         </section>
 
-        {/* Summary */}
         {p.professionalSummary && (
           <section>
             <SectionHeading>Summary</SectionHeading>
@@ -166,21 +267,19 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
           </section>
         )}
 
-        {/* Skills — dictionary-based, unchanged logic */}
         {p.skills.length > 0 && (
           <section>
             <SectionHeading>Skills</SectionHeading>
-            <SkillGroup heading="Programming" items={sc.programming} className="bg-blue-50 text-blue-700 border-blue-200" />
-            <SkillGroup heading="Databases" items={sc.databases} className="bg-purple-50 text-purple-700 border-purple-200" />
-            <SkillGroup heading="Python Libraries" items={sc.pythonLibraries} className="bg-yellow-50 text-yellow-700 border-yellow-200" />
-            <SkillGroup heading="BI & Visualization" items={sc.biVisualization} className="bg-orange-50 text-orange-700 border-orange-200" />
-            <SkillGroup heading="Analytics" items={sc.analytics} className="bg-teal-50 text-teal-700 border-teal-200" />
-            <SkillGroup heading="Tools" items={sc.tools} className="bg-surface-2 text-body border-default" />
-            <SkillGroup heading="AI-Assisted Analytics" items={sc.aiAssisted} className="bg-pink-50 text-pink-700 border-pink-200" />
+            <SkillGroup heading="Programming"          items={sc.programming}     pillStyle={SKILL_STYLES.programming} />
+            <SkillGroup heading="Databases"            items={sc.databases}        pillStyle={SKILL_STYLES.databases}   />
+            <SkillGroup heading="Python Libraries"     items={sc.pythonLibraries}  pillStyle={SKILL_STYLES.python}      />
+            <SkillGroup heading="BI & Visualization"   items={sc.biVisualization}  pillStyle={SKILL_STYLES.bi}          />
+            <SkillGroup heading="Analytics"            items={sc.analytics}        pillStyle={SKILL_STYLES.analytics}   />
+            <SkillGroup heading="Tools"                items={sc.tools} />
+            <SkillGroup heading="AI-Assisted Analytics" items={sc.aiAssisted}      pillStyle={SKILL_STYLES.ai}          />
           </section>
         )}
 
-        {/* Experience */}
         {p.workExperience.length > 0 && (
           <section>
             <SectionHeading>Experience</SectionHeading>
@@ -195,7 +294,6 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
           </section>
         )}
 
-        {/* Projects */}
         {p.projects.length > 0 && (
           <section>
             <SectionHeading>Projects</SectionHeading>
@@ -205,7 +303,6 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
           </section>
         )}
 
-        {/* Education */}
         {p.education.length > 0 && (
           <section>
             <SectionHeading>Education</SectionHeading>
@@ -215,7 +312,6 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
           </section>
         )}
 
-        {/* Achievements */}
         {p.achievements.length > 0 && (
           <section>
             <SectionHeading>Achievements</SectionHeading>
@@ -230,7 +326,6 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
           </section>
         )}
 
-        {/* Languages */}
         {p.languages.length > 0 && (
           <section>
             <SectionHeading>Languages</SectionHeading>
@@ -240,7 +335,6 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
           </section>
         )}
 
-        {/* Certifications */}
         {p.certifications.length > 0 && (
           <section>
             <SectionHeading>Certifications</SectionHeading>
@@ -258,14 +352,19 @@ function ParsedProfilePanel({ p }: { p: ParsedProfile }) {
   );
 }
 
-// ─── AI Insights panel — visually distinct from extracted data ────────────────
+// ─── AI Insights panel ────────────────────────────────────────────────────────
 
 function AiInsightsPanel({ insights }: { insights: NonNullable<Resume["aiInsights"]> }) {
   return (
     <div className="mt-6 rounded-2xl overflow-hidden animate-slide-up ai-section">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="ai-badge">AI Generated</span>
-        <p className="text-xs text-muted">Interpretation, not verified fact</p>
+      <div className="flex items-center gap-3 mb-5">
+        <span className="ai-badge">
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+            <circle cx="4" cy="4" r="3" fill="currentColor" opacity="0.7" />
+          </svg>
+          AI Generated
+        </span>
+        <p className="text-xs text-muted">Interpretation only — not verified fact</p>
       </div>
 
       <div className="space-y-5">
@@ -301,20 +400,61 @@ function AiInsightsPanel({ insights }: { insights: NonNullable<Resume["aiInsight
             </ul>
           </section>
         )}
-        <p className="text-xs text-muted">Generated by {insights.model} · {new Date(insights.generatedAt).toLocaleString()}</p>
+        <p className="text-xs text-muted pt-1">
+          Generated by {insights.model} · {new Date(insights.generatedAt).toLocaleString()}
+        </p>
       </div>
     </div>
   );
 }
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
+// ─── Processing step indicator ────────────────────────────────────────────────
 
-function Spinner() {
+function ProcessingStep({
+  label,
+  active,
+  done,
+}: {
+  label: string;
+  active: boolean;
+  done: boolean;
+}) {
   return (
-    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-    </svg>
+    <div className="flex items-center gap-3">
+      <div
+        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300"
+        style={{
+          background: done
+            ? "var(--ok-bg)"
+            : active
+            ? "rgba(99,102,241,0.1)"
+            : "var(--bg-surface2)",
+          border: `1px solid ${done ? "rgba(16,185,129,0.35)" : active ? "rgba(99,102,241,0.3)" : "var(--border)"}`,
+          boxShadow: active ? "0 0 12px rgba(99,102,241,0.2)" : "none",
+        }}
+      >
+        {done ? (
+          <svg width="10" height="10" fill="none" viewBox="0 0 10 10" aria-hidden="true">
+            <path d="M2.5 5l2 2 3-3.5" stroke="var(--ok-fg)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : active ? (
+          <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="var(--accent)" strokeWidth="4" />
+            <path className="opacity-80" fill="var(--accent)" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+        ) : (
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--muted)" }} />
+        )}
+      </div>
+      <span
+        className="text-sm font-medium transition-colors duration-300"
+        style={{
+          color: done ? "var(--ok-fg)" : active ? "var(--ink)" : "var(--muted)",
+        }}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -397,7 +537,6 @@ export function ResumeUpload() {
 
   const handleDragLeave = () => { setIsDragOver(false); };
 
-  // Single-action: upload + parse + analyze in one pass
   const handleProcess = async () => {
     if (!file) return;
     setIsUploading(true);
@@ -457,17 +596,17 @@ export function ResumeUpload() {
 
   const isBusy = isUploading || isParsing || isAnalyzing;
 
-  const busyLabel =
-    isUploading ? "Uploading…"
-    : isParsing ? "Parsing…"
-    : isAnalyzing ? "Generating insights…"
-    : "";
-
   if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto">
-        <div className="rounded-2xl border border-default bg-surface shadow-panel p-8 flex items-center justify-center gap-3 text-muted">
-          <Spinner />
+        <div
+          className="rounded-2xl p-8 flex items-center justify-center gap-3 text-muted"
+          style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}
+        >
+          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
           <span className="text-sm font-medium">Loading resume…</span>
         </div>
       </div>
@@ -476,12 +615,28 @@ export function ResumeUpload() {
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-slide-up">
-      <div className="rounded-2xl border border-default bg-surface shadow-panel p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink">Upload Resume</h2>
+      <div
+        className="rounded-2xl p-8"
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-7">
+          <div>
+            <h2 className="font-display text-xl font-bold text-ink">Upload Resume</h2>
+            <p className="text-xs text-muted mt-0.5">PDF or DOCX · max 5 MB</p>
+          </div>
           {result && (
-            <button onClick={handleReset} className="text-xs text-muted hover:text-accent underline underline-offset-2 transition-colors">
-              Upload a different resume
+            <button
+              onClick={handleReset}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              style={{ border: "1px solid var(--border)", color: "var(--body)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--body)"; }}
+            >
+              Upload different
             </button>
           )}
         </div>
@@ -497,10 +652,7 @@ export function ResumeUpload() {
             onDragLeave={handleDragLeave}
             onClick={() => { fileInputRef.current?.click(); }}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click(); }}
-            className={[
-              "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors select-none",
-              isDragOver ? "drop-active" : "border-default hover:border-[var(--accent)]",
-            ].join(" ")}
+            className={`upload-zone p-10 text-center ${isDragOver ? "drop-active" : ""}`}
           >
             <input
               type="file"
@@ -509,54 +661,105 @@ export function ResumeUpload() {
               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               onChange={handleFileChange}
             />
-            <div className="flex flex-col items-center gap-3">
-              <svg className="w-10 h-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+            <div className="flex flex-col items-center gap-4">
               {file ? (
-                <p className="text-body text-sm font-medium">
-                  {file.name}
-                  <span className="text-muted font-normal ml-2">— click or drop to replace</span>
-                </p>
+                <>
+                  <div
+                    className="w-11 h-11 rounded-full flex items-center justify-center"
+                    style={{
+                      background: "var(--ok-bg)",
+                      border: "1px solid rgba(16,185,129,0.3)",
+                    }}
+                  >
+                    <svg width="20" height="20" fill="none" viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M4 10l4 4 8-8" stroke="var(--ok-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{file.name}</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      {(file.size / 1024).toFixed(1)} KB — click or drop to replace
+                    </p>
+                  </div>
+                </>
               ) : (
                 <>
-                  <p className="text-body text-sm">
-                    Drop your resume here or{" "}
-                    <span className="text-accent underline underline-offset-2">browse</span>
-                  </p>
-                  <p className="text-muted text-xs">PDF or DOCX · max 5 MB</p>
+                  {/* Upload icon */}
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}
+                  >
+                    <svg width="22" height="22" fill="none" viewBox="0 0 22 22" aria-hidden="true">
+                      <path
+                        d="M11 14V6M11 6L8 9M11 6L14 9"
+                        stroke="var(--accent)"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M4 17h14"
+                        stroke="var(--accent)"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        opacity="0.5"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-body">
+                      Drop your resume here or{" "}
+                      <span className="text-accent underline underline-offset-2 cursor-pointer">
+                        browse
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted mt-1">PDF or DOCX · max 5 MB</p>
+                  </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Process button */}
-          {file && !isBusy && !result && (
-            <button
-              onClick={() => { void handleProcess(); }}
-              className="w-full px-6 py-3 text-white text-sm font-semibold rounded-xl transition-colors shadow-card"
-              style={{ background: "var(--accent)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-h)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
-            >
-              Analyse Resume
-            </button>
-          )}
+          {/* Process steps + button */}
+          {file && !result && (
+            <div className="space-y-4">
+              {isBusy && (
+                <div
+                  className="rounded-xl px-5 py-4 space-y-3"
+                  style={{
+                    background: "var(--bg-surface2)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <ProcessingStep label="Extracting text"           active={isUploading} done={!isUploading && (isParsing || isAnalyzing)} />
+                  <ProcessingStep label="Parsing profile"           active={isParsing}   done={!isParsing && isAnalyzing} />
+                  <ProcessingStep label="Generating AI insights"    active={isAnalyzing} done={false} />
+                </div>
+              )}
 
-          {/* Progress during processing */}
-          {isBusy && (
-            <div className="flex items-center justify-center gap-3 py-4 text-body text-sm" role="status">
-              <Spinner />
-              <span>{busyLabel}</span>
+              {!isBusy && (
+                <button
+                  onClick={() => { void handleProcess(); }}
+                  className="w-full px-6 py-3.5 text-sm font-semibold rounded-xl btn-gradient"
+                >
+                  Analyse Resume
+                </button>
+              )}
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div className="p-3 rounded-lg text-sm" role="alert"
-              style={{ background: "var(--err-bg)", color: "var(--err-fg)", border: "1px solid var(--err-fg)" }}>
-              {error}
+            <div
+              className="p-3 rounded-xl text-sm"
+              role="alert"
+              style={{
+                background: "var(--err-bg)",
+                color: "var(--err-fg)",
+                border: "1px solid rgba(239,68,68,0.25)",
+              }}
+            >
+              ⚠ {error}
             </div>
           )}
 
@@ -565,21 +768,36 @@ export function ResumeUpload() {
             <div className="mt-2 space-y-2 animate-fade-in">
               {/* Extraction stats */}
               <div className="flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 rounded-full" style={{ background: "var(--ok-fg)" }} />
-                <h3 className="text-sm font-medium" style={{ color: "var(--ok-fg)" }}>Extraction complete</h3>
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: "var(--ok-fg)" }}
+                />
+                <span className="text-sm font-semibold" style={{ color: "var(--ok-fg)" }}>
+                  Extraction complete
+                </span>
               </div>
               <dl className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div className="p-3 rounded-xl border border-default bg-surface-2">
-                  <dt className="text-xs font-medium text-muted uppercase tracking-wider mb-1">Characters</dt>
-                  <dd className="text-lg font-semibold text-ink">{result.charCount.toLocaleString()}</dd>
-                </div>
-                <div className="p-3 rounded-xl border border-default bg-surface-2">
-                  <dt className="text-xs font-medium text-muted uppercase tracking-wider mb-1">Words</dt>
-                  <dd className="text-lg font-semibold text-ink">{result.wordCount.toLocaleString()}</dd>
-                </div>
-                <div className="p-3 rounded-xl border border-default bg-surface-2 md:col-span-2">
-                  <dt className="text-xs font-medium text-muted uppercase tracking-wider mb-1">File</dt>
-                  <dd className="text-xs font-medium text-body truncate">{result.filename} · {result.fileType.split("/").pop()}</dd>
+                {[
+                  { label: "Characters", value: result.charCount.toLocaleString() },
+                  { label: "Words",      value: result.wordCount.toLocaleString() },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="p-3 rounded-xl"
+                    style={{ background: "var(--bg-surface2)", border: "1px solid var(--border)" }}
+                  >
+                    <dt className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">{label}</dt>
+                    <dd className="text-lg font-bold text-ink tabular-nums">{value}</dd>
+                  </div>
+                ))}
+                <div
+                  className="p-3 rounded-xl md:col-span-2"
+                  style={{ background: "var(--bg-surface2)", border: "1px solid var(--border)" }}
+                >
+                  <dt className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">File</dt>
+                  <dd className="text-xs font-medium text-body truncate">
+                    {result.filename} · {result.fileType.split("/").pop()}
+                  </dd>
                 </div>
               </dl>
 
@@ -587,12 +805,17 @@ export function ResumeUpload() {
               {result.aiInsights && <AiInsightsPanel insights={result.aiInsights} />}
 
               {/* Raw text */}
-              <div className="border-t border-soft pt-4">
+              <div className="border-t pt-4" style={{ borderColor: "var(--border-soft)" }}>
                 <details>
-                  <summary className="text-sm font-medium text-muted cursor-pointer hover:text-body transition-colors select-none">
+                  <summary
+                    className="text-sm font-medium text-muted cursor-pointer select-none transition-colors hover:text-body"
+                  >
                     View raw extracted text
                   </summary>
-                  <div className="mt-4 p-4 rounded-xl border border-default bg-surface-2 text-xs text-muted h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+                  <div
+                    className="mt-4 p-4 rounded-xl text-xs text-muted h-48 overflow-y-auto whitespace-pre-wrap font-mono"
+                    style={{ background: "var(--bg-surface2)", border: "1px solid var(--border)" }}
+                  >
                     {result.extractedText}
                   </div>
                 </details>

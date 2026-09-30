@@ -49,12 +49,18 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div
-        className="rounded-2xl border border-default bg-surface shadow-panel p-8 animate-scale-in"
+        className="rounded-2xl p-8 animate-scale-in"
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.45)",
+        }}
       >
         {/* Mode selector */}
         <div
           role="tablist"
-          className="flex gap-1 p-1 rounded-xl bg-surface-2 border border-soft w-fit mb-6"
+          className="flex gap-1 p-1 rounded-xl w-fit mb-7"
+          style={{ background: "var(--bg-surface2)", border: "1px solid var(--border-soft)" }}
         >
           {(["login", "signup"] as AuthMode[]).map((m) => (
             <button
@@ -64,24 +70,31 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
               aria-selected={mode === m}
               onClick={() => { switchMode(m); }}
               className={[
-                "px-5 py-2 rounded-lg text-sm font-medium transition-colors",
-                mode === m ? "text-white shadow" : "text-muted hover:text-body",
+                "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
+                mode === m ? "text-white shadow-md" : "text-muted hover:text-body",
               ].join(" ")}
-              style={mode === m ? { background: "var(--accent)" } : {}}
+              style={
+                mode === m
+                  ? { background: "linear-gradient(135deg, var(--grad-start), var(--grad-end))" }
+                  : {}
+              }
             >
               {m === "login" ? "Log in" : "Sign up"}
             </button>
           ))}
         </div>
 
-        <h2 className="font-display text-xl font-semibold text-ink mb-6">
+        <h2 className="font-display text-xl font-bold text-ink mb-6">
           {mode === "login" ? "Welcome back" : "Create your account"}
         </h2>
 
         <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-4">
           {/* Email */}
           <div>
-            <label htmlFor="auth-email" className="block text-sm font-medium text-body mb-1.5">
+            <label
+              htmlFor="auth-email"
+              className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2"
+            >
               Email
             </label>
             <input
@@ -90,12 +103,21 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
               required
               autoComplete="email"
               placeholder="you@example.com"
-              className={[
-                "w-full rounded-xl border text-sm px-4 py-3",
-                "bg-ledger placeholder:text-muted text-ink",
-                "focus:outline-none transition-colors",
-                error ? "border-[var(--err-fg)]" : "border-default focus:border-[var(--accent)]",
-              ].join(" ")}
+              className="w-full rounded-xl text-sm px-4 py-3 text-ink placeholder-muted transition-all duration-200"
+              style={{
+                background: "var(--bg)",
+                border: `1px solid ${error ? "var(--err-fg)" : "var(--border)"}`,
+                outline: "none",
+                color: "var(--ink)",
+              }}
+              onFocus={(e) => {
+                if (!error) e.currentTarget.style.borderColor = "var(--accent)";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.12)";
+              }}
+              onBlur={(e) => {
+                if (!error) e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
               value={email}
               onChange={(event) => { setEmail(event.target.value); }}
             />
@@ -103,7 +125,10 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
 
           {/* Password */}
           <div>
-            <label htmlFor="auth-password" className="block text-sm font-medium text-body mb-1.5">
+            <label
+              htmlFor="auth-password"
+              className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2"
+            >
               Password
             </label>
             <input
@@ -112,12 +137,21 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
               required
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               placeholder={mode === "signup" ? "At least 8 characters" : ""}
-              className={[
-                "w-full rounded-xl border text-sm px-4 py-3",
-                "bg-ledger placeholder:text-muted text-ink",
-                "focus:outline-none transition-colors",
-                error ? "border-[var(--err-fg)]" : "border-default focus:border-[var(--accent)]",
-              ].join(" ")}
+              className="w-full rounded-xl text-sm px-4 py-3 text-ink placeholder-muted transition-all duration-200"
+              style={{
+                background: "var(--bg)",
+                border: `1px solid ${error ? "var(--err-fg)" : "var(--border)"}`,
+                outline: "none",
+                color: "var(--ink)",
+              }}
+              onFocus={(e) => {
+                if (!error) e.currentTarget.style.borderColor = "var(--accent)";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.12)";
+              }}
+              onBlur={(e) => {
+                if (!error) e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
               value={password}
               onChange={(event) => { setPassword(event.target.value); }}
             />
@@ -126,11 +160,15 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
           {/* Error */}
           {error && (
             <div
-              className="flex items-start gap-2 p-3 rounded-lg text-sm"
-              style={{ background: "var(--err-bg)", color: "var(--err-fg)", border: "1px solid var(--err-fg)" }}
+              className="flex items-start gap-2 p-3 rounded-xl text-sm"
+              style={{
+                background: "var(--err-bg)",
+                color: "var(--err-fg)",
+                border: "1px solid rgba(239,68,68,0.25)",
+              }}
               role="alert"
             >
-              <span className="mt-px">⚠</span>
+              <span className="mt-px shrink-0">⚠</span>
               <span>{error}</span>
             </div>
           )}
@@ -139,22 +177,30 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full px-6 py-3 text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-card mt-2"
-            style={{ background: "var(--accent)", opacity: isSubmitting ? 0.7 : 1 }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-h)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
+            className="w-full px-6 py-3 text-white text-sm font-semibold rounded-xl btn-gradient mt-2"
           >
-            {isSubmitting ? "Signing in…" : mode === "login" ? "Log in" : "Create account"}
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                {mode === "login" ? "Signing in…" : "Creating account…"}
+              </span>
+            ) : (
+              mode === "login" ? "Log in" : "Create account"
+            )}
           </button>
         </form>
 
         {/* Switch mode */}
-        <p className="text-xs text-muted mt-5">
+        <p className="text-xs text-muted mt-5 text-center">
           {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
           <button
             type="button"
             onClick={() => { switchMode(mode === "login" ? "signup" : "login"); }}
-            className="underline underline-offset-2 hover:text-accent transition-colors"
+            className="underline underline-offset-2 transition-colors hover:text-accent"
+            style={{ color: "var(--body)" }}
           >
             {mode === "login" ? "Sign up" : "Log in"}
           </button>

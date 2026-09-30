@@ -101,7 +101,7 @@ export async function processBatch(
     try {
       const parsedProfile = parseResumeText(extractedText);
       const candidateScore = await withRetry(() =>
-        withTimeout(scoreCandidate(parsedProfile, jobDescription), 30_000, "Candidate scoring")
+        withTimeout(scoreCandidate(parsedProfile, jobDescription), 90_000, "Candidate scoring")
       );
 
       await resumesCollection.updateOne(

@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import multer from "multer";
 import { extractResumeText } from "../lib/fileExtractor.js";
 import { getDatabase } from "../lib/db.js";
-import type { Resume } from "@gcarbon/types";
+import type { Resume, AiInsights } from "@gcarbon/types";
 import { ObjectId } from "mongodb";
 import { parseResumeText } from "../lib/parser.js";
 import { generateInsights } from "../lib/aiAnalysis.js";
@@ -252,23 +252,33 @@ resumesRouter.post("/:id/analyze", requireAuth, async (req, res) => {
       });
     }
 
-    const aiInsights = await withRetry(() =>
-      withTimeout(generateInsights(parsedProfile), 30000, "AI analysis")
-    );
-
-    await resumesCollection.updateOne(
-      { _id: objectId },
-      { $set: { aiInsights } }
-    );
+    let aiInsights: AiInsights | undefined;
+    let aiError: string | undefined;
+    try {
+      aiInsights = await withRetry(() =>
+        withTimeout(generateInsights(parsedProfile), 90_000, "AI analysis")
+      );
+      await resumesCollection.updateOne(
+        { _id: objectId },
+        { $set: { aiInsights } }
+      );
+    } catch (aiErr) {
+      console.error("[Resume Analyze] AI insights failed:", aiErr);
+      aiError = aiErr instanceof Error ? aiErr.message : "AI analysis unavailable";
+    }
 
     const { _id: _, ...rest } = resumeDoc;
     const updatedResume: Resume = {
       ...rest,
-      aiInsights,
+      ...(aiInsights !== undefined ? { aiInsights } : {}),
       _id: id,
     };
 
-    res.status(200).json({ success: true, data: updatedResume });
+    res.status(200).json({
+      success: true,
+      data: updatedResume,
+      ...(aiError !== undefined ? { aiError } : {}),
+    });
   } catch (error) {
     console.error("[Resume Analyze Error]:", error);
     res.status(500).json({
