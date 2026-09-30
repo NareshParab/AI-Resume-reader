@@ -1,12 +1,10 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
-import { extractResumeText } from "../lib/fileExtractor.js";
 import { getDatabase } from "../lib/db.js";
 import type { Resume, Batch } from "@gcarbon/types";
 import { ObjectId } from "mongodb";
 import { resumeIdParamSchema, resumeFileMetadataSchema, jobDescriptionSchema } from "@gcarbon/schemas";
-import { processBatch } from "../lib/batchProcessor.js";
-import { withTimeout } from "../lib/withTimeout.js";
+import { processBatch, type FilePayload } from "../lib/batchProcessor.js";
 import { requireAuth } from "../lib/auth.js";
 
 export const batchesRouter = Router();
@@ -58,8 +56,6 @@ function handleUpload(req: Request, res: Response, next: NextFunction) {
   });
 }
 
-const EXTRACTION_TIMEOUT_MS = 15000;
-
 batchesRouter.post("/", requireAuth, handleUpload, async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[] | undefined;
@@ -92,9 +88,15 @@ batchesRouter.post("/", requireAuth, handleUpload, async (req, res) => {
       return res.status(401).json({ success: false, error: "Authentication required." });
     }
 
+    // Capture file payloads as plain objects NOW, before the response returns
+    // (multer buffers are released when the request ends)
+    const filePayloads: FilePayload[] = files.map(f => ({
+      buffer: f.buffer,
+      originalname: f.originalname,
+      mimetype: f.mimetype,
+    }));
+
     const db = getDatabase();
-    
-    // Create batch document first to get its ID
     const batchDoc: Omit<Batch, "_id"> = {
       userId,
       jobDescription: jdResult.data,
@@ -104,37 +106,11 @@ batchesRouter.post("/", requireAuth, handleUpload, async (req, res) => {
       failedCount: 0,
       createdAt: new Date().toISOString(),
     };
-    
+
     const batchResult = await db.collection<Omit<Batch, "_id">>("batches").insertOne(batchDoc);
     const batchId = batchResult.insertedId.toString();
 
-    // Process all files and save as resumes
-    for (const file of files) {
-      const label = file.mimetype === "application/pdf" ? "PDF parsing" : "DOCX parsing";
-      const extractedText = await withTimeout(
-        extractResumeText(file),
-        EXTRACTION_TIMEOUT_MS,
-        label
-      );
-
-      const charCount = extractedText.length;
-      const wordCount = extractedText.split(" ").filter((w) => w.length > 0).length;
-
-      const resumeDoc: Omit<Resume, "_id"> = {
-        userId,
-        batchId,
-        filename: file.originalname,
-        fileType: file.mimetype,
-        extractedText,
-        charCount,
-        wordCount,
-        uploadedAt: new Date().toISOString(),
-      };
-
-      await db.collection<Omit<Resume, "_id">>("resumes").insertOne(resumeDoc);
-    }
-
-    // Respond immediately
+    // Respond 201 before any extraction/parsing/scoring work starts
     res.status(201).json({
       success: true,
       data: {
@@ -143,8 +119,8 @@ batchesRouter.post("/", requireAuth, handleUpload, async (req, res) => {
       },
     });
 
-    // Kick off batch processing without awaiting (fire-and-forget)
-    processBatch(batchId).catch((err: unknown) => {
+    // Fire-and-forget: full pipeline runs after response is sent
+    processBatch(batchId, filePayloads, jdResult.data).catch((err: unknown) => {
       console.error(`[Batch ${batchId}] Background processing failed:`, err);
     });
 

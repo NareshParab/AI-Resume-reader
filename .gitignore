@@ -5,3 +5,8 @@ dist
 coverage
 
 *.tsbuildinfo
+
+# Real resumes and test data — never commit PII or scratch data
+test-resumes/
+gcarbon-test-data/
+gcarbon-test-data.zip

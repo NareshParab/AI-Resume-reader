@@ -29,6 +29,8 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
 
       if (response.ok && json.success) {
         onAuthenticated();
+      } else if (response.status === 401) {
+        setError("Incorrect email or password.");
       } else {
         setError(json.error ?? `Failed to ${mode === "login" ? "log in" : "sign up"}.`);
       }
@@ -39,46 +41,47 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
     }
   };
 
-  const toggleMode = () => {
-    setMode((currentMode) => currentMode === "login" ? "signup" : "login");
+  const switchMode = (next: AuthMode) => {
+    setMode(next);
     setError(null);
   };
 
   return (
     <div className="w-full max-w-sm mx-auto">
-      <div className="rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-8">
-        <div className="flex gap-2 p-1 rounded-xl bg-slate-800 border border-slate-700 w-fit mb-6">
-          <button
-            type="button"
-            onClick={() => { setMode("login"); setError(null); }}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mode === "login"
-                ? "bg-brand-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Log in
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode("signup"); setError(null); }}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mode === "signup"
-                ? "bg-brand-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Sign up
-          </button>
+      <div
+        className="rounded-2xl border border-default bg-surface shadow-panel p-8 animate-scale-in"
+      >
+        {/* Mode selector */}
+        <div
+          role="tablist"
+          className="flex gap-1 p-1 rounded-xl bg-surface-2 border border-soft w-fit mb-6"
+        >
+          {(["login", "signup"] as AuthMode[]).map((m) => (
+            <button
+              key={m}
+              role="tab"
+              type="button"
+              aria-selected={mode === m}
+              onClick={() => { switchMode(m); }}
+              className={[
+                "px-5 py-2 rounded-lg text-sm font-medium transition-colors",
+                mode === m ? "text-white shadow" : "text-muted hover:text-body",
+              ].join(" ")}
+              style={mode === m ? { background: "var(--accent)" } : {}}
+            >
+              {m === "login" ? "Log in" : "Sign up"}
+            </button>
+          ))}
         </div>
 
-        <h2 className="text-xl font-semibold text-white mb-6">
-          {mode === "login" ? "Log in to Resume AI" : "Create your account"}
+        <h2 className="font-display text-xl font-semibold text-ink mb-6">
+          {mode === "login" ? "Welcome back" : "Create your account"}
         </h2>
 
-        <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-6">
+        <form onSubmit={(event) => { void handleSubmit(event); }} className="space-y-4">
+          {/* Email */}
           <div>
-            <label htmlFor="auth-email" className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="auth-email" className="block text-sm font-medium text-body mb-1.5">
               Email
             </label>
             <input
@@ -86,14 +89,21 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
               type="email"
               required
               autoComplete="email"
-              className="w-full rounded-xl bg-slate-900 border border-slate-600 text-slate-200 text-sm px-4 py-3 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
+              placeholder="you@example.com"
+              className={[
+                "w-full rounded-xl border text-sm px-4 py-3",
+                "bg-ledger placeholder:text-muted text-ink",
+                "focus:outline-none transition-colors",
+                error ? "border-[var(--err-fg)]" : "border-default focus:border-[var(--accent)]",
+              ].join(" ")}
               value={email}
               onChange={(event) => { setEmail(event.target.value); }}
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label htmlFor="auth-password" className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="auth-password" className="block text-sm font-medium text-body mb-1.5">
               Password
             </label>
             <input
@@ -101,34 +111,54 @@ export function AuthForm({ onAuthenticated }: AuthFormProps) {
               type="password"
               required
               autoComplete={mode === "login" ? "current-password" : "new-password"}
-              className="w-full rounded-xl bg-slate-900 border border-slate-600 text-slate-200 text-sm px-4 py-3 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
+              placeholder={mode === "signup" ? "At least 8 characters" : ""}
+              className={[
+                "w-full rounded-xl border text-sm px-4 py-3",
+                "bg-ledger placeholder:text-muted text-ink",
+                "focus:outline-none transition-colors",
+                error ? "border-[var(--err-fg)]" : "border-default focus:border-[var(--accent)]",
+              ].join(" ")}
               value={password}
               onChange={(event) => { setPassword(event.target.value); }}
             />
           </div>
 
+          {/* Error */}
           {error && (
-            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
+            <div
+              className="flex items-start gap-2 p-3 rounded-lg text-sm"
+              style={{ background: "var(--err-bg)", color: "var(--err-fg)", border: "1px solid var(--err-fg)" }}
+              role="alert"
+            >
+              <span className="mt-px">⚠</span>
+              <span>{error}</span>
             </div>
           )}
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-brand-500/20"
+            className="w-full px-6 py-3 text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-card mt-2"
+            style={{ background: "var(--accent)", opacity: isSubmitting ? 0.7 : 1 }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-h)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
           >
-            {isSubmitting ? "Submitting..." : mode === "login" ? "Log in" : "Sign up"}
+            {isSubmitting ? "Signing in…" : mode === "login" ? "Log in" : "Create account"}
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={toggleMode}
-          className="text-xs text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors mt-5"
-        >
-          {mode === "login" ? "Need an account? Sign up" : "Already have an account? Log in"}
-        </button>
+        {/* Switch mode */}
+        <p className="text-xs text-muted mt-5">
+          {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
+          <button
+            type="button"
+            onClick={() => { switchMode(mode === "login" ? "signup" : "login"); }}
+            className="underline underline-offset-2 hover:text-accent transition-colors"
+          >
+            {mode === "login" ? "Sign up" : "Log in"}
+          </button>
+        </p>
       </div>
     </div>
   );

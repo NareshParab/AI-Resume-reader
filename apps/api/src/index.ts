@@ -30,7 +30,25 @@ process.on("unhandledRejection", (reason) => {
   console.error("[API] Unhandled promise rejection (process kept alive):", reason);
 });
 
+// ─── Environment validation ───────────────────────────────────────────────────
+const isProd = process.env.NODE_ENV === "production";
+
+if (!process.env.JWT_SECRET) {
+  console.error("[API] FATAL: JWT_SECRET is not set. Refusing to start.");
+  process.exit(1);
+}
+if (isProd && !process.env.MONGODB_URI) {
+  console.error("[API] FATAL: MONGODB_URI is required in production. Refusing to start.");
+  process.exit(1);
+}
+if (!process.env.GEMINI_API_KEY) {
+  console.warn("[API] WARNING: GEMINI_API_KEY is not set — AI scoring will fail.");
+}
+
 const app = express();
+
+// Trust first proxy hop (required on Render/Heroku for correct req.ip behind load balancer)
+app.set("trust proxy", 1);
 
 // ─── Security middleware ───────────────────────────────────────────────────────
 app.use(helmet());
@@ -93,10 +111,22 @@ const server = app.listen(port, () => {
   console.log(`   Database: MongoDB`);
   console.log(`   DB Name:  ${process.env.MONGODB_DB_NAME ?? "gcarbon_resume_ai"}`);
   
-  import("./lib/db.js")
-    .then(async ({ connectDatabase }) => {
+  Promise.all([import("./lib/db.js"), import("./lib/dbIndexes.js")])
+    .then(async ([{ connectDatabase, getDatabase }, { ensureIndexes }]) => {
       await connectDatabase();
       console.log(`[API] MongoDB connected successfully`);
+
+      await ensureIndexes();
+
+      // Recover any batches left in "processing" state from a previous crash/restart
+      const db = getDatabase();
+      const stuckResult = await db.collection("batches").updateMany(
+        { status: "processing" },
+        { $set: { status: "failed", failedReason: "Server restarted during processing" } }
+      );
+      if (stuckResult.modifiedCount > 0) {
+        console.warn(`[API] Marked ${stuckResult.modifiedCount.toString()} stuck batch(es) as failed.`);
+      }
     })
     .catch((e: unknown) => {
       console.error(`[API] Warning: Failed to connect to MongoDB on startup:`, e);

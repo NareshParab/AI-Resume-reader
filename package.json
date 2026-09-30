@@ -38,8 +38,5 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
-  },
-  "dependencies": {
-    "pdf-parse": "^1.1.1"
   }
 }

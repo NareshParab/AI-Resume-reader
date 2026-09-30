@@ -1,10 +1,27 @@
 import { Router } from "express";
 import { ObjectId } from "mongodb";
+import { rateLimit } from "express-rate-limit";
 import { getDatabase } from "../lib/db.js";
 import { signupSchema, loginSchema } from "@gcarbon/schemas";
 import { hashPassword, verifyPassword, signToken, requireAuth } from "../lib/auth.js";
 
 export const authRouter = Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many login attempts. Please try again in 15 minutes." },
+});
+
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many signup attempts. Please try again in an hour." },
+});
 
 // Raw DB document — _id is managed by MongoDB (ObjectId), passwordHash never leaves server
 interface DbUser {
@@ -13,7 +30,7 @@ interface DbUser {
   createdAt: string;
 }
 
-authRouter.post("/signup", async (req, res) => {
+authRouter.post("/signup", signupLimiter, async (req, res) => {
   try {
     const parseResult = signupSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -60,7 +77,7 @@ authRouter.post("/signup", async (req, res) => {
   }
 });
 
-authRouter.post("/login", async (req, res) => {
+authRouter.post("/login", loginLimiter, async (req, res) => {
   try {
     const parseResult = loginSchema.safeParse(req.body);
     if (!parseResult.success) {

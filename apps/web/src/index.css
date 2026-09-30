@@ -2,13 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Ledger design tokens ──────────────────────────────────────────────────── */
+
 @layer base {
   :root {
-    --color-bg: 15 23 42;        /* slate-900 */
-    --color-surface: 30 41 59;   /* slate-800 */
-    --color-border: 51 65 85;    /* slate-700 */
-    --color-text: 248 250 252;   /* slate-50 */
-    --color-muted: 148 163 184;  /* slate-400 */
+    /* Light — warm parchment */
+    --bg:          #FAF7F2;
+    --bg-surface:  #F3EFE8;
+    --bg-surface2: #EDE8DF;
+    --border:      #D8D0C4;
+    --border-soft: #E8E3DA;
+    --muted:       #9E9488;
+    --ink:         #1C1917;
+    --body:        #44403C;
+    --accent:      #C2621A;
+    --accent-h:    #A85116;
+    --accent-lite: #FFF1E5;
+    /* AI content distinction */
+    --ai-fg:       #3730A3;
+    --ai-bg:       #EEF2FF;
+    --ai-border:   #C7D2FE;
+    /* Status */
+    --ok-fg:       #15803D;
+    --ok-bg:       #F0FDF4;
+    --err-fg:      #B91C1C;
+    --err-bg:      #FEF2F2;
+    --warn-fg:     #92400E;
+    --warn-bg:     #FFFBEB;
+  }
+
+  /* Dark mode — deep warm slate */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:          #18140F;
+      --bg-surface:  #211C16;
+      --bg-surface2: #2C261E;
+      --border:      #3D3529;
+      --border-soft: #322C23;
+      --muted:       #7C7268;
+      --ink:         #F5F0E8;
+      --body:        #C4BDB4;
+      --accent:      #E07A35;
+      --accent-h:    #EF8944;
+      --accent-lite: #2D1A08;
+      --ai-fg:       #818CF8;
+      --ai-bg:       #1E1B4B;
+      --ai-border:   #312E81;
+      --ok-fg:       #4ADE80;
+      --ok-bg:       #052E16;
+      --err-fg:      #FCA5A5;
+      --err-bg:      #450A0A;
+      --warn-fg:     #FCD34D;
+      --warn-bg:     #451A03;
+    }
   }
 
   * {
@@ -24,22 +70,88 @@
   }
 
   body {
-    background-color: rgb(var(--color-bg));
-    color: rgb(var(--color-text));
+    background-color: var(--bg);
+    color: var(--body);
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    color: var(--ink);
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  /* Respect user motion preference — disable all animations */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
+/* ── Ledger utility classes ────────────────────────────────────────────────── */
+
 @layer utilities {
-  .text-muted {
-    color: rgb(var(--color-muted));
+  /* Surfaces */
+  .bg-ledger          { background-color: var(--bg); }
+  .bg-surface         { background-color: var(--bg-surface); }
+  .bg-surface-2       { background-color: var(--bg-surface2); }
+
+  /* Text */
+  .text-ink           { color: var(--ink); }
+  .text-body          { color: var(--body); }
+  .text-muted         { color: var(--muted); }
+
+  /* Borders */
+  .border-default     { border-color: var(--border); }
+  .border-soft        { border-color: var(--border-soft); }
+
+  /* Accent */
+  .text-accent        { color: var(--accent); }
+  .bg-accent-lite     { background-color: var(--accent-lite); }
+
+  /* AI content badge */
+  .ai-badge {
+    color: var(--ai-fg);
+    background-color: var(--ai-bg);
+    border: 1px solid var(--ai-border);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
   }
-  .bg-surface {
-    background-color: rgb(var(--color-surface));
+
+  .ai-section {
+    background-color: var(--ai-bg);
+    border: 1px solid var(--ai-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
   }
-  .border-default {
-    border-color: rgb(var(--color-border));
+
+  /* Shimmer skeleton */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--bg-surface) 25%,
+      var(--bg-surface2) 50%,
+      var(--bg-surface) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+    border-radius: 0.25rem;
+  }
+
+  /* Drag-over state */
+  .drop-active {
+    border-color: var(--accent) !important;
+    background-color: var(--accent-lite) !important;
   }
 }

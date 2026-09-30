@@ -114,8 +114,7 @@ function extractIdentity(headerLines: string[]) {
 
     // Location: City, State / City, Country patterns
     if (!location && locationRe.test(t) && t.split(",").length >= 2) {
-      location = t; 
-      console.log('Location matched:', t);
+      location = t;
       continue;
     }
 
@@ -124,12 +123,10 @@ function extractIdentity(headerLines: string[]) {
     if (!email && !phone) {
       // All-caps 2+ words (e.g., "NARESH PARAB")
       if (/^[A-Z][A-Z\s]+$/.test(t) && t.split(/\s+/).length >= 2 && t.length < 60) {
-        console.log('Name candidate all caps:', t);
         nameCandidates.push(t);
       }
       // Title case 2+ words (e.g., "John Doe")
       else if (/^[A-Z][a-z]+(\s+[A-Z][a-z]+){1,3}$/.test(t) && t.length < 50) {
-        console.log('Name candidate title case:', t);
         nameCandidates.push(t);
       }
     }

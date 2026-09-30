@@ -122,11 +122,13 @@ export interface Batch {
   _id?: string;
   userId?: string;
   jobDescription: string;
-  status: "processing" | "completed";
+  status: "processing" | "completed" | "failed";
   totalCount: number;
   completedCount: number;
   failedCount: number;
   createdAt: string;
+  /** Set when the batch failed due to a server restart or unrecoverable error. */
+  failedReason?: string;
 }
 
 export interface Resume {
@@ -142,4 +144,6 @@ export interface Resume {
   parsedProfile?: ParsedProfile;
   aiInsights?: AiInsights;
   candidateScore?: CandidateScore;
+  /** Set when file extraction failed for this resume in a batch. */
+  extractionError?: string;
 }

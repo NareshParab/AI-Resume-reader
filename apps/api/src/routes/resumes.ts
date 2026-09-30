@@ -244,7 +244,8 @@ resumesRouter.post("/:id/analyze", requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: "Resume not found." });
     }
 
-    if (!resumeDoc.parsedProfile) {
+    const parsedProfile = resumeDoc.parsedProfile;
+    if (!parsedProfile) {
       return res.status(400).json({
         success: false,
         error: "Resume must be parsed before it can be analyzed. Call /:id/parse first.",
@@ -252,7 +253,7 @@ resumesRouter.post("/:id/analyze", requireAuth, async (req, res) => {
     }
 
     const aiInsights = await withRetry(() =>
-      withTimeout(generateInsights(resumeDoc.parsedProfile!), 30000, "AI analysis")
+      withTimeout(generateInsights(parsedProfile), 30000, "AI analysis")
     );
 
     await resumesCollection.updateOne(

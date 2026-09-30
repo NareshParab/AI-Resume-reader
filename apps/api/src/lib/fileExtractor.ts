@@ -1,7 +1,13 @@
 import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
 import * as mammoth from "mammoth";
 
-export async function extractResumeText(file: Express.Multer.File): Promise<string> {
+/** Minimal shape extractResumeText needs — satisfied by both multer File and plain buffer payloads. */
+export interface FileInput {
+  mimetype: string;
+  buffer: Buffer;
+}
+
+export async function extractResumeText(file: FileInput): Promise<string> {
   let extractedText = "";
 
   // Extract text based on file type
