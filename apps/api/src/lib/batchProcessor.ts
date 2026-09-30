@@ -20,10 +20,26 @@ function delay(ms: number) {
 
 const EXTRACTION_TIMEOUT_MS = 15_000;
 
+// scoreCandidate prompt includes both the job description AND the full profile
+// JSON, making it larger than generateInsights. 120 s gives headroom over the
+// observed ~54 s for generateInsights while still protecting against hangs.
+const SCORING_TIMEOUT_MS = 120_000;
+
+// Gemini free-tier rate-limit windows reset after ~60 s. Use longer backoffs
+// than the default withRetry values so retries have a real chance of succeeding.
+const BATCH_RETRY_DELAYS = [60_000, 120_000] as const;
+
+// 20 s between files keeps the effective request rate well below free-tier RPM
+// limits regardless of how quickly scoreCandidate itself returns.
+const INTER_FILE_DELAY_MS = 20_000;
+
 /**
  * Full async pipeline: extract text, parse, and score each file in the batch.
  * Called fire-and-forget from the route handler after the 201 response is sent.
  * Per-file failures increment failedCount without aborting the whole batch.
+ *
+ * parsedProfile is written to MongoDB before AI scoring starts so that
+ * extraction work is never silently discarded when scoring fails.
  */
 export async function processBatch(
   batchId: string,
@@ -51,7 +67,7 @@ export async function processBatch(
     if (!file) continue;
 
     // Pace requests to stay within free-tier AI limits
-    if (i > 0) await delay(4000);
+    if (i > 0) await delay(INTER_FILE_DELAY_MS);
 
     // ── Step 1: Extract text ──────────────────────────────────────────────────
     let extractedText: string;
@@ -97,23 +113,40 @@ export async function processBatch(
     };
     const insertResult = await resumesCollection.insertOne(resumeDoc);
 
-    // ── Step 3: Parse + score ─────────────────────────────────────────────────
+    // ── Step 3: Parse and persist profile ────────────────────────────────────
+    // parseResumeText is synchronous and never throws. Saving the profile
+    // immediately ensures it is not lost if the subsequent AI scoring step fails.
+    const parsedProfile = parseResumeText(extractedText);
+    await resumesCollection.updateOne(
+      { _id: insertResult.insertedId },
+      { $set: { parsedProfile } }
+    );
+
+    // ── Step 4: AI candidate scoring ─────────────────────────────────────────
     try {
-      const parsedProfile = parseResumeText(extractedText);
-      const candidateScore = await withRetry(() =>
-        withTimeout(scoreCandidate(parsedProfile, jobDescription), 90_000, "Candidate scoring")
+      const candidateScore = await withRetry(
+        () => withTimeout(
+          scoreCandidate(parsedProfile, jobDescription),
+          SCORING_TIMEOUT_MS,
+          "Candidate scoring"
+        ),
+        [...BATCH_RETRY_DELAYS]
       );
 
       await resumesCollection.updateOne(
         { _id: insertResult.insertedId },
-        { $set: { parsedProfile, candidateScore } }
+        { $set: { candidateScore } }
       );
 
       completedCount++;
       await batchesCollection.updateOne({ _id: batchObjectId }, { $set: { completedCount } });
+      console.log(`[BatchProcessor] Scored ${file.originalname} successfully.`);
     } catch (err) {
-      // Extraction succeeded (resume saved) but parse/score failed
-      console.error(`[BatchProcessor] Parse/score failed for ${file.originalname}:`, err);
+      // parsedProfile is already saved above — only scoring failed
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[BatchProcessor] AI scoring failed for "${file.originalname}": ${errMsg}`
+      );
       failedCount++;
       await batchesCollection.updateOne({ _id: batchObjectId }, { $set: { failedCount } });
     }
