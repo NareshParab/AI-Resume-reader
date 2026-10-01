@@ -371,9 +371,10 @@ export function BatchUpload() {
   // ─── Processing view ──────────────────────────────────────────────────────────
 
   if (batchId) {
-    const done = batchData?.completedCount ?? 0;
+    const processed = (batchData?.completedCount ?? 0) + (batchData?.failedCount ?? 0);
     const total = batchData?.totalCount ?? files.length;
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+    const failedCount = batchData?.failedCount ?? 0;
 
     return (
       <div className="w-full max-w-4xl mx-auto animate-fade-in">
@@ -404,7 +405,9 @@ export function BatchUpload() {
               </div>
               <div>
                 <h2 className="font-display text-lg font-bold text-ink">AI Processing…</h2>
-                <p className="text-xs text-muted">{done}/{total} candidates scored</p>
+                <p className="text-xs text-muted">
+                  {processed}/{total} processed{failedCount > 0 ? ` · ${failedCount.toString()} failed` : ""}
+                </p>
               </div>
             </div>
             <button
