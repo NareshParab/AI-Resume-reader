@@ -6,6 +6,15 @@ export interface User {
   createdAt: string;
 }
 
+export interface PasswordResetToken {
+  _id?: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: string;
+  usedAt: string | null;
+  createdAt: string;
+}
+
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

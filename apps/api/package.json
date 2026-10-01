@@ -27,6 +27,7 @@
     "mammoth": "^1.12.3",
     "mongodb": "^6.0.0",
     "multer": "^2.3.0",
+    "nodemailer": "^10.0.13",
     "unpdf": "^1.6.0"
   },
   "devDependencies": {
@@ -37,6 +38,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "supertest": "^7.2.2",
     "tsx": "^4.16.2",

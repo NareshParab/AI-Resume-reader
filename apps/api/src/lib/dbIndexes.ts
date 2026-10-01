@@ -19,5 +19,17 @@ export async function ensureIndexes(): Promise<void> {
     { name: "resumes_batchId" }
   );
 
-  console.log("[DB] Indexes ensured: users.email (unique), resumes.batchId");
+  // passwordResetTokens.tokenHash — lookup during password reset
+  await db.collection("passwordResetTokens").createIndex(
+    { tokenHash: 1 },
+    { name: "prt_tokenHash" }
+  );
+
+  // passwordResetTokens.expiresAt — TTL; MongoDB auto-deletes expired tokens
+  await db.collection("passwordResetTokens").createIndex(
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0, name: "prt_expiresAt_ttl" }
+  );
+
+  console.log("[DB] Indexes ensured: users.email (unique), resumes.batchId, passwordResetTokens.tokenHash, passwordResetTokens.expiresAt (TTL)");
 }
